@@ -9,6 +9,7 @@ const CHAIN = 84532, CHAIN_HEX = "0x14a34";
 const BASE_SEPOLIA = { chainId: CHAIN_HEX, chainName: "Base Sepolia", nativeCurrency: { name: "Sepolia Ether", symbol: "ETH", decimals: 18 },
   rpcUrls: ["https://sepolia.base.org"], blockExplorerUrls: ["https://sepolia.basescan.org"] };
 const EXPL = "https://sepolia.basescan.org";
+const FAUCETS = '<a href="https://portal.cdp.coinbase.com/products/faucet" target="_blank" rel="noopener">Coinbase CDP faucet</a> or <a href="https://www.alchemy.com/faucets/base-sepolia" target="_blank" rel="noopener">Alchemy faucet</a>';
 const $ = (id) => document.getElementById(id);
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const sh = (a) => a.slice(0, 6) + "…" + a.slice(-4);
@@ -96,7 +97,9 @@ async function refresh() {
    <div class="bals"><div><span class="sub">Test ETH (gas)</span><b>${fmt(W.eth, 18, 4)}</b></div><div><span class="sub">Test USDC</span><b>${fmt(W.usdcBalance, 6, 2)}</b></div>
    ${st.map((s) => `<div><span class="sub">${s.symbol} <span style="opacity:.7">(sim)</span></span><b>${fmt(s.balance, 8, 6)}</b></div>`).join("")}</div>
    <div class="chips">${st.map((s, i) => `<button data-add="${i}">+ Add ${s.symbol} to wallet</button>`).join("")}</div>
+   ${BigInt(W.eth) === 0n ? `<div class="msg">You have <b>0 test ETH</b>. Buying a clip still works (no gas), but the swap needs a tiny bit of Base Sepolia ETH for gas. Get some free from the ${FAUCETS}, paste <button class="lnk" id="w-copy">your address</button>, then come back.</div>` : ""}
    ${BigInt(W.usdcBalance) === 0n ? '<div class="msg">You have no test USDC yet. Grab 10 free from <a href="https://faucet.circle.com" target="_blank" rel="noopener">faucet.circle.com</a> (choose Base Sepolia), then come back to this page.</div>' : ""}`;
+  $("w-copy")?.addEventListener("click", () => navigator.clipboard?.writeText(acct).then(() => { $("w-copy").textContent = "copied ✓"; }).catch(() => {}));
   $("w-switch")?.addEventListener("click", () => chainOk().then(refresh).catch((e) => msg("s-msg", why(e), "bad")));
   $("w-body").querySelectorAll("[data-add]").forEach((b) => b.onclick = () => {
     const s = st[b.dataset.add];
@@ -117,7 +120,7 @@ function quote() {
   const enough = a > 0n && a <= BigInt(W.usdcBalance), gas = BigInt(W.eth) > 0n;
   const approved = a > 0n && BigInt(W.allowance) >= a;
   $("s-quote").innerHTML = a > 0n
-    ? `You get about <b>${fmt(out, 8, 6)} ${s.symbol}</b> at the sim price <b>$${fmt(price, 6, 2)}</b> per share.${!enough ? ' <span class="bad">Not enough test USDC.</span>' : ""}${!gas ? ' <span class="bad">You need a little test ETH for gas.</span>' : ""}`
+    ? `You get about <b>${fmt(out, 8, 6)} ${s.symbol}</b> at the sim price <b>$${fmt(price, 6, 2)}</b> per share.${!enough ? ' <span class="bad">Not enough test USDC.</span>' : ""}${!gas ? ` <span class="bad">You need a little test ETH for gas</span> (free from the ${FAUCETS}).` : ""}`
     : "Enter an amount.";
   $("s-approve").disabled = busy || !enough || !gas || approved;
   $("s-approve").textContent = approved ? "1. Approved ✓" : "1. Approve";
@@ -173,7 +176,7 @@ async function buyClip() {
       domain: { name: req.extra.name, version: req.extra.version, chainId: CHAIN, verifyingContract: req.asset },
       message: auth,
     };
-    msg("c-msg", `Sign in your wallet: it authorizes exactly <b>${fmt(req.amount, 6, 2)} test USDC</b> to the ClipFund treasury ${sh(req.payTo)}. No gas.`);
+    msg("c-msg", `Your wallet will show a <b>TransferWithAuthorization</b> signature (EIP-3009, the standard x402 uses). Check it says: token <b>USDC</b> ${sh(req.asset)}, to <b>${sh(req.payTo)}</b> (the verified ClipFund treasury), value <b>${req.amount}</b> (= ${fmt(req.amount, 6, 2)} test USDC), chain 84532 (Base Sepolia). It moves only that amount, once, and expires in ${Math.round(req.maxTimeoutSeconds / 60)} min. No gas.`);
     const signature = await rq("eth_signTypedData_v4", [acct, JSON.stringify(typed)]);
     msg("c-msg", "Signed. Settling the payment onchain and cutting your clip…");
     const payload = { x402Version: pr.x402Version, payload: { authorization: auth, signature }, resource: pr.resource, accepted: req };
