@@ -127,7 +127,8 @@ app.get(["/", "/index.html"], async (_req, res) => {
   res.set("Cache-Control", "no-cache").type("html")
     .send(INDEX.replace("/*__STATE__*/null", st ? inline(st) : "null"));
 });
-app.use(express.static(path.join(ROOT, "public"), { maxAge: "1h" }));
+// HTML/JS revalidate on every load so a phone never keeps an old build after a deploy.
+app.use(express.static(path.join(ROOT, "public"), { setHeaders: (res) => res.set("Cache-Control", "no-cache") }));
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, mode: MODE, network: NETWORK, treasury: D.treasury });

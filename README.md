@@ -2,7 +2,7 @@
 
 **Live dashboard (Base Sepolia testnet):** https://dipdass.github.io/clipfund
 
-The public site is a static page on GitHub Pages. Live onchain data, clip payments and the API still come from the agent at https://clipfund-szbe.onrender.com. The first load can take up to a minute if that service has been idle.
+The public site is a static page on GitHub Pages. Live onchain data, clip payments and the API come from the agent at https://clipfund-szbe.onrender.com, which serves the same dashboard too. Render's free plan puts the service to sleep when it's idle, so the first load after a quiet spell can take 30–60 seconds.
 
 
 A clipping agent that pays for itself and saves what's left in tokenized stocks.
@@ -52,13 +52,26 @@ The stock tokens are still simulated. sCOIN and sNVDA are test tokens with fixed
 
 ## Try it with your own wallet
 
-Open the **Try it** tab on the [live dashboard](https://dipdass.github.io/clipfund/#tryit) (on a phone, inside the MetaMask app's browser):
+Open the **Try it** tab: **https://dipdass.github.io/clipfund/#tryit**. On a phone, open that link inside the MetaMask app's browser. On a computer, use Chrome with the MetaMask extension.
 
-1. **Connect wallet.** The page asks your wallet to switch to (or add) Base Sepolia, chain 84532, and shows your test ETH, test USDC, sCOIN and sNVDA.
-2. **Buy a clip.** You sign one EIP-3009 `TransferWithAuthorization` for $0.50 test USDC. The x402 facilitator settles it straight into the treasury and the agent books it like every other payment. You pay no gas.
-3. **Swap.** Approve, then swap your own test USDC into sCOIN or sNVDA on the public `SimStockExchange.buy()`. This needs a little Base Sepolia ETH for gas. The demo exchange is buy-only.
+| Phone (390×844) | Desktop |
+|---|---|
+| <img src="docs/tryit-mobile.png" width="260" alt="Try it on a phone"> | <img src="docs/tryit-desktop.png" width="480" alt="Try it on desktop"> |
 
-Test USDC: [faucet.circle.com](https://faucet.circle.com) (USDC, Base Sepolia). Visitor swaps never touch the treasury, so every reconciliation check still holds. `server/scripts/tryit-e2e.mjs` runs the whole flow in a headless phone browser with an injected test wallet.
+1. **Get test funds.** Test USDC from [faucet.circle.com](https://faucet.circle.com) (pick USDC and Base Sepolia). For the swap you also need a little Base Sepolia ETH for gas, from the [Coinbase CDP faucet](https://portal.cdp.coinbase.com/products/faucet) or [Alchemy](https://www.alchemy.com/faucets/base-sepolia). Buying a clip needs no ETH.
+2. **Connect wallet.** The page asks your wallet to switch to (or add) Base Sepolia, chain 84532, and shows your test ETH, test USDC, sCOIN and sNVDA. If you have 0 test ETH it tells you so and links the faucets.
+3. **Buy a clip.** You sign one EIP-3009 `TransferWithAuthorization`: exactly 500000 units (0.50 test USDC) to the verified `ClipFundTreasury`, on chain 84532, valid for a few minutes. The page shows those exact values before your wallet opens. The x402 facilitator settles it into the treasury and the agent books it like every other payment. No gas.
+4. **Swap.** **1. Approve** gives the verified `SimStockExchange` an allowance for exactly the amount you typed, never unlimited. **2. Swap** calls `SimStockExchange.buy()`. Then tap **+ Add sCOIN to wallet** to see the token in MetaMask. The demo exchange is buy-only.
+
+Visitor swaps never touch the treasury, so every reconciliation check still holds. `server/scripts/tryit-e2e.mjs` runs the whole flow in a headless phone browser with an injected test wallet.
+
+### About MetaMask's "Malicious site" alert
+
+MetaMask may show a full-screen **"Malicious site"** alert on this page. That alert comes from MetaMask's URL scan of the site's host, not from the request itself. Right now the scan returns `BLOCK` for **every** `*.github.io` and `*.onrender.com` host we tried, including `octocat.github.io` and names that don't exist. So it says nothing specific about ClipFund. Until the verdict changes, judge for yourself: the code is all here and every contract is source-verified (links above). Only ever use a test wallet with no real funds.
+
+### Versions and caching
+
+The footer shows the build version (currently **v1.5.0**). If you still see an older layout, reload the page. The Render server sends `Cache-Control: no-cache` for the HTML and JS, and the script URL carries the version, so one reload is enough.
 
 ## What's in here
 

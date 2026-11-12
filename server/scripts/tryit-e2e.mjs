@@ -49,7 +49,8 @@ await ctx.addInitScript(() => {
 const page = await ctx.newPage();
 page.on("pageerror", (e) => console.log("pageerror", e.message));
 const shot = (n) => page.screenshot({ path: `${SHOTS}/tryit-${n}.png`, fullPage: true });
-const until = (sel, re, ms = 120000) => page.waitForFunction(([s, r]) => new RegExp(r).test(document.querySelector(s)?.innerText || ""), [sel, re], { timeout: ms, polling: 500 });
+const until = (sel, re, ms = 120000) => page.waitForFunction(([s, r]) => new RegExp(r).test(document.querySelector(s)?.innerText || ""), [sel, re], { timeout: ms, polling: 500 })
+  .catch(async (e) => { console.log("timeout on", sel, "text:", (await page.innerText(sel).catch(() => "")).replace(/\s+/g, " "), "rpc:", log.slice(-8).join(",")); await shot("fail"); throw e; });
 const bal = async () => (await (await fetch(`${BASE}/api/wallet/${account.address}`)).json());
 
 const before = await bal();
@@ -73,16 +74,20 @@ await until("#w-body", "Test USDC");
 await shot("2-connected");
 console.log("connected; chain after switch/add:", chain);
 
+if (!process.env.SKIP_CLIP) {
 await page.click("#c-buy");
 await until("#c-msg", "Paid|cancel|need|not|Unexpected|error", 180000);
 const clipMsg = await page.innerText("#c-msg");
 const settle = await page.$eval("#c-msg a", (a) => a.href).catch(() => null);
 console.log("clip:", clipMsg.replace(/\s+/g, " "), settle);
 await shot("3-clip-paid");
+}
 
 await page.click('#s-chips button[data-v="1"]');
-await page.click("#s-approve");
-await until("#s-msg", "Approved|cancel|revert|error", 180000);
+await page.waitForTimeout(500);
+if (await page.$eval("#s-approve", (b) => b.disabled)) console.log("allowance already covers $1, skipping approve");
+else { await page.click("#s-approve");
+await until("#s-msg", "Approved|cancel|revert|error", 180000); }
 const approveTx = await page.$eval("#s-msg a", (a) => a.href).catch(() => null);
 console.log("approve:", (await page.innerText("#s-msg")).replace(/\s+/g, " "), approveTx);
 await page.waitForFunction(() => !document.getElementById("s-swap").disabled, null, { timeout: 30000 });
