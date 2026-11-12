@@ -1,5 +1,7 @@
 # ClipFund
 
+**Live dashboard (Base Sepolia testnet):** https://clipfund-szbe.onrender.com
+
 A clipping agent that pays for itself and saves what's left in tokenized stocks.
 
 I make crypto and trading content, and cutting clips from streams takes up a lot of my week. ClipFund turns that job into a small paid API. You send a stream, a start and end time, and a headline, and you get back a vertical clip. You pay $0.50 in USDC over [x402](https://docs.x402.org), and the money goes straight into a contract on Base. That contract decides where it goes:
