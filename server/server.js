@@ -118,9 +118,9 @@ app.use(paymentMiddleware({
   },
 }, resourceServer));
 
-app.post("/clip", (req, res) => {
+app.post("/clip", async (req, res) => {
   try {
-    const clip = makeClip(req.body || {});
+    const clip = await makeClip(req.body || {});
     res.json({ ok: true, service: "ClipFund", clip, treasury: D.treasury, note: "Payment is booked onchain by the treasury rules after settlement." });
   } catch (e) { res.status(400).json({ ok: false, error: e.message }); }
 });
