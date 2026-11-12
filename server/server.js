@@ -19,10 +19,11 @@ const PORT = Number(process.env.PORT || 4021);
 const HOST = process.env.HOST || "0.0.0.0";
 const PRICE = process.env.CLIP_PRICE || "$0.50";
 
-function localFacilitator() {
+function localFacilitator(keyEnv = "FACILITATOR_PK") {
   // In local mode we run the standard x402 facilitator logic in-process against the anvil fork
   // (same EIP-3009 transferWithAuthorization on the real Base Sepolia USDC contract code).
-  const c = wallet("FACILITATOR_PK");
+  // On Base Sepolia it is the fallback when the public facilitator is unreachable from the host.
+  const c = wallet(keyEnv);
   const signer = toFacilitatorEvmSigner({
     address: c.account.address,
     getCode: (a) => c.getCode(a),
@@ -36,9 +37,35 @@ function localFacilitator() {
   return { verify: (p, r) => f.verify(p, r), settle: (p, r) => f.settle(p, r), getSupported: async () => f.getSupported() };
 }
 
-const facilitator = MODE === "local" && !process.env.FACILITATOR_URL
-  ? localFacilitator()
-  : new HTTPFacilitatorClient({ url: process.env.FACILITATOR_URL || "https://x402.org/facilitator" });
+const withTimeout = (p, ms, what) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error(`${what} timed out after ${ms / 1000} s`)), ms))]);
+
+// Public x402.org facilitator first; if it does not answer from this host, settle in-process with the
+// same open-source facilitator code, paying gas from a throwaway TESTNET key (FACILITATOR_PK, else AGENT_PK).
+function resilientFacilitator() {
+  const url = process.env.FACILITATOR_URL || "https://x402.org/facilitator";
+  const remote = new HTTPFacilitatorClient({ url });
+  const selfKey = process.env.FACILITATOR_PK ? "FACILITATOR_PK" : process.env.AGENT_PK ? "AGENT_PK" : null;
+  let self = null; let useSelf = process.env.FACILITATOR === "self" && Boolean(selfKey);
+  const own = () => (self ||= localFacilitator(selfKey));
+  if (useSelf) console.log(`x402: settling in-process (FACILITATOR=self, gas from ${selfKey})`);
+  return {
+    async getSupported() {
+      if (useSelf) return own().getSupported();
+      try { return await withTimeout(remote.getSupported(), 8000, `facilitator ${url}/supported`); }
+      catch (e) {
+        if (!selfKey) throw e;
+        useSelf = true;
+        const m = `x402: public facilitator unavailable (${e.message}); settling in-process, gas from ${selfKey}`;
+        activity.push(m); console.log(m);
+        return own().getSupported();
+      }
+    },
+    verify: (p, r) => (useSelf ? own().verify(p, r) : withTimeout(remote.verify(p, r), 20000, "facilitator verify")),
+    settle: (p, r) => (useSelf ? own().settle(p, r) : withTimeout(remote.settle(p, r), 90000, "facilitator settle")),
+  };
+}
+
+const facilitator = MODE === "local" && !process.env.FACILITATOR_URL ? localFacilitator() : resilientFacilitator();
 
 const resourceServer = new x402ResourceServer(facilitator)
   .register(NETWORK, new ExactEvmServer())

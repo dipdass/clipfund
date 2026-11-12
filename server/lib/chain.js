@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import { createPublicClient, createWalletClient, http, publicActions, defineChain } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { privateKeyToAccount, nonceManager } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -26,7 +26,7 @@ export const publicClient = createPublicClient({ chain, transport: http(RPC_URL)
 export function wallet(envKey) {
   const pk = process.env[envKey];
   if (!pk) throw new Error(`${envKey} missing in the environment (local: server/.env; hosted: the service env vars)`);
-  const account = privateKeyToAccount(pk);
+  const account = privateKeyToAccount(pk, { nonceManager }); // shared per address: agent + in-process facilitator never collide
   return createWalletClient({ account, chain, transport: http(RPC_URL) }).extend(publicActions);
 }
 
