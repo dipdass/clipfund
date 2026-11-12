@@ -28,6 +28,15 @@ ClipFund is deployed on the public Base Sepolia testnet (chain 84532). Payments 
 | sNVDA (simulated test stock) | [0xf469a6092a8543169bcf7c75cd9a433b86bcbdb8](https://sepolia.basescan.org/token/0xf469a6092a8543169bcf7c75cd9a433b86bcbdb8) |
 | Test USDC (Circle) | [0x036CbD53842c5426634e7929541eC2318f3dCF7e](https://sepolia.basescan.org/token/0x036CbD53842c5426634e7929541eC2318f3dCF7e) |
 
+**Verified source.** All four contracts have verified source code (exact match, solc 0.8.26, 200 optimizer runs), so anyone can read the rules the agent runs under:
+
+| Contract | Blockscout | Sourcify |
+|---|---|---|
+| ClipFundTreasury | [Blockscout](https://base-sepolia.blockscout.com/address/0xf4e808d0159d13f9b6e75674c9247ae3c078d3d5?tab=contract) | [Sourcify](https://repo.sourcify.dev/84532/0xf4e808d0159d13f9b6e75674c9247ae3c078d3d5) |
+| SimStockExchange | [Blockscout](https://base-sepolia.blockscout.com/address/0x18a776641516ecb570d6f9656661984254761cc8?tab=contract) | [Sourcify](https://repo.sourcify.dev/84532/0x18a776641516ecb570d6f9656661984254761cc8) |
+| sCOIN (SimStockToken) | [Blockscout](https://base-sepolia.blockscout.com/address/0xea190a2661b2d12ba29a552287c5825db5e5a1c5?tab=contract) | [Sourcify](https://repo.sourcify.dev/84532/0xea190a2661b2d12ba29a552287c5825db5e5a1c5) |
+| sNVDA (SimStockToken) | [Blockscout](https://base-sepolia.blockscout.com/address/0xf469a6092a8543169bcf7c75cd9a433b86bcbdb8?tab=contract) | [Sourcify](https://repo.sourcify.dev/84532/0xf469a6092a8543169bcf7c75cd9a433b86bcbdb8) |
+
 One payment, traced through every step:
 - x402 settlement (0.50 USDC, buyer to treasury): [0x734156fb…de2b6d](https://sepolia.basescan.org/tx/0x734156fbe9296c675b7f930b68f22da2c1812646214792663e81bb7205de2b6d)
 - `recordPayment`, which splits it by the rules: [0x0a332a75…5e257d9f](https://sepolia.basescan.org/tx/0x0a332a75b0b86e647c5dfd111396f9ba3cee713a7d14b7a6a43ebcc55e257d9f)

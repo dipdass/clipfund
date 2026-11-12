@@ -38,6 +38,16 @@ One payment, traced through every step:
 
 The stock tokens are still simulated. sCOIN and sNVDA are test tokens with fixed mock prices, because Coinbase's tokenized stocks are on Base mainnet only. They carry no rights in any company.
 
+## Verified source
+All four contracts have verified source code (exact match, solc 0.8.26, 200 optimizer runs), so anyone can read the rules the agent runs under:
+
+| Contract | Blockscout | Sourcify |
+|---|---|---|
+| ClipFundTreasury | [Blockscout](https://base-sepolia.blockscout.com/address/0xf4e808d0159d13f9b6e75674c9247ae3c078d3d5?tab=contract) | [Sourcify](https://repo.sourcify.dev/84532/0xf4e808d0159d13f9b6e75674c9247ae3c078d3d5) |
+| SimStockExchange | [Blockscout](https://base-sepolia.blockscout.com/address/0x18a776641516ecb570d6f9656661984254761cc8?tab=contract) | [Sourcify](https://repo.sourcify.dev/84532/0x18a776641516ecb570d6f9656661984254761cc8) |
+| sCOIN (SimStockToken) | [Blockscout](https://base-sepolia.blockscout.com/address/0xea190a2661b2d12ba29a552287c5825db5e5a1c5?tab=contract) | [Sourcify](https://repo.sourcify.dev/84532/0xea190a2661b2d12ba29a552287c5825db5e5a1c5) |
+| sNVDA (SimStockToken) | [Blockscout](https://base-sepolia.blockscout.com/address/0xf469a6092a8543169bcf7c75cd9a433b86bcbdb8?tab=contract) | [Sourcify](https://repo.sourcify.dev/84532/0xf469a6092a8543169bcf7c75cd9a433b86bcbdb8) |
+
 ## What the judges asked for, and how ClipFund meets it
 | Ask | ClipFund |
 |---|---|
