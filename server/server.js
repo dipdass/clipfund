@@ -10,7 +10,8 @@ import { toFacilitatorEvmSigner } from "@x402/evm";
 import { MODE, NETWORK, ROOT, wallet, deployments } from "./lib/chain.js";
 import { onPaid, payOpex, activity, idle } from "./lib/agent.js";
 import { makeClip, CLIPS_DIR } from "./lib/clip.js";
-import { buildState } from "./lib/state.js";
+import fs from "node:fs";
+import { currentState, refreshState, invalidateState } from "./lib/state.js";
 
 const D = deployments();
 const PORT = Number(process.env.PORT || 4021);
@@ -44,6 +45,7 @@ const resourceServer = new x402ResourceServer(facilitator)
     const { result, requirements } = ctx;
     if (!result?.success) return;
     await onPaid({ txHash: result.transaction, payer: result.payer, amount: requirements.amount, job: "clip" });
+    invalidateState();
   })
   .onVerifyFailure(async (ctx) => { const m = `x402 verify failed: ${ctx.error?.message || JSON.stringify(ctx.result || {})}`; activity.push(m); console.log(m); })
   .onSettleFailure(async (ctx) => { const m = `x402 settle failed: ${ctx.error?.message || "unknown"}`; activity.push(m); console.log(m); });
@@ -51,7 +53,18 @@ const resourceServer = new x402ResourceServer(facilitator)
 const app = express();
 app.use(express.json());
 app.use("/clips", express.static(CLIPS_DIR));
-app.use(express.static(path.join(ROOT, "public")));
+
+// The dashboard HTML ships with the last known report inlined, so a phone paints real numbers
+// on the first response instead of waiting for a chain scan.
+const INDEX = fs.readFileSync(path.join(ROOT, "public", "index.html"), "utf8");
+const inline = (st) => JSON.stringify(st).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
+app.get(["/", "/index.html"], async (_req, res) => {
+  let st = null;
+  try { st = await Promise.race([currentState(activity), new Promise((r) => setTimeout(() => r(null), 1500))]); } catch {}
+  res.set("Cache-Control", "no-cache").type("html")
+    .send(INDEX.replace("/*__STATE__*/null", st ? inline(st) : "null"));
+});
+app.use(express.static(path.join(ROOT, "public"), { maxAge: "1h" }));
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, mode: MODE, network: NETWORK, treasury: D.treasury });
@@ -73,13 +86,19 @@ app.post("/clip", (req, res) => {
 });
 
 app.get("/api/state", async (_req, res) => {
-  try { await idle(); res.json(await buildState(activity)); } catch (e) { res.status(500).json({ error: e.message }); }
+  // Default: answer at once from the last good report (refreshed in the background every ~20 s).
+  // ?fresh=1 waits for the agent queue and a full onchain rebuild (used by the e2e/capture scripts).
+  const fresh = "fresh" in _req.query;
+  try {
+    if (fresh) await idle();
+    res.set("Cache-Control", "no-store").json(await currentState(activity, { fresh }));
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Demo-only admin hook (localhost) so the e2e script can show an operating cost paid from the reserve.
 app.post("/admin/opex", async (req, res) => {
   if (!["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(req.socket.remoteAddress)) return res.status(403).end();
-  try { const h = await payOpex(req.body.amount, req.body.memo || "operating cost"); res.json({ ok: true, tx: h }); }
+  try { const h = await payOpex(req.body.amount, req.body.memo || "operating cost"); invalidateState(); res.json({ ok: true, tx: h }); }
   catch (e) { res.status(400).json({ ok: false, error: e.shortMessage || e.message }); }
 });
 
@@ -87,4 +106,7 @@ if (!process.env.AGENT_PK) {
   console.log("AGENT_PK is not set; the dashboard will still serve onchain state, but the agent cannot book payments or buy stocks.");
 }
 
-app.listen(PORT, HOST, () => console.log(`ClipFund agent on http://${HOST}:${PORT} (mode=${MODE}, treasury=${D.treasury}, price=${PRICE})`));
+app.listen(PORT, HOST, () => {
+  console.log(`ClipFund agent on http://${HOST}:${PORT} (mode=${MODE}, treasury=${D.treasury}, price=${PRICE})`);
+  refreshState(activity).catch(() => {}); // warm the report right after boot
+});

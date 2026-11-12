@@ -25,7 +25,7 @@ for (let i = 0; i < JOBS; i++) {
   console.log(`paid clip ${i + 1}: HTTP ${r.status} settle tx ${r.settle?.transaction} clip ${r.body.clip?.url}`);
   log.push({ step: `paid clip ${i + 1}`, status: r.status, settlement: r.settle, clip: r.body.clip });
 }
-const st = await fetch(`${BASE}/api/state`).then((r) => r.json());
+const st = await fetch(`${BASE}/api/state?fresh=1`).then((r) => r.json());
 console.log(`\nrevenue ${fmt6(st.totals.revenue)} | reserve ${fmt6(st.buckets.reserveBalance)} | stock budget ${fmt6(st.buckets.stockBudget)} | cash ${fmt6(st.buckets.cashBalance)} | NAV ${fmt6(st.buckets.nav)}`);
 for (const h of st.holdings) console.log(`${h.symbol}: ${(Number(h.balance) / 1e8).toFixed(6)} sh, $${fmt6(h.value)}, weight ${h.weightBps / 100}% (cap ${h.maxWeightBps / 100}%)`);
 for (const c of st.reconciliation.checks) console.log(`${c.ok ? "PASS" : "FAIL"}  ${c.name}`);

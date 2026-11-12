@@ -40,7 +40,7 @@ const heads = ["BASE STOCKS MAXXING", "AGENT BUYS COIN", "NVDA ON BASE", "x402 P
 async function pay(i) {
   const r = await buyClip({ start: 5 + i * 10, end: 20 + i * 10, headline: heads[i] });
   await new Promise((s) => setTimeout(s, 300));
-  await fetch(`${BASE}/api/state`);
+  await fetch(`${BASE}/api/state?fresh=1`);
   const out = [`$ npm run buy   # paying client #${i + 1}: 402 -> sign EIP-3009 USDC authorization -> retry`,
     `HTTP ${r.status}  clip ${r.body.clip.url}  (${r.body.clip.seconds}s, ${r.body.clip.format})`,
     `x402 settlement: success=${r.settle.success}  tx ${r.settle.transaction}`, `payer ${r.settle.payer}`, ...agentLog()];
@@ -53,13 +53,13 @@ const p3 = await pay(2); const p4 = await pay(3);
 save("t-pay34.txt", [...p3.out, "", ...p4.out].join("\n"));
 await shots("s2");
 const ox = await fetch(`${BASE}/admin/opex`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ amount: "200000", memo: "transcription + render minutes" }) }).then((r) => r.json());
-await fetch(`${BASE}/api/state`);
+await fetch(`${BASE}/api/state?fresh=1`);
 const opexLog = agentLog();
 const p5 = await pay(4); const p6 = await pay(5);
 save("t-opex.txt", [`$ agent pays an operating cost (0.20 USDC) -> payOperatingCost(vendor)`, ...opexLog, "", ...p5.out, "", ...p6.out].join("\n"));
 await shots("s3");
 // try to break the rules: agent buys more than its stock budget / a non-allowlisted token
-const st = await fetch(`${BASE}/api/state`).then((r) => r.json());
+const st = await fetch(`${BASE}/api/state?fresh=1`).then((r) => r.json());
 save("state-final.json", JSON.stringify(st, null, 2));
 save("clip-file.txt", p1.r.body.clip.url);
 await browser.close();

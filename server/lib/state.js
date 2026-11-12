@@ -9,6 +9,7 @@ import os from "node:os";
 // Public Base Sepolia RPC caps eth_getLogs at a 200-block range, so we scan in windows
 // and cache the raw treasury logs on disk so restarts stay cheap.
 const STEP = BigInt(process.env.LOGS_BLOCK_RANGE || 199);
+const SCAN_PARALLEL = Number(process.env.LOGS_PARALLEL || 6);
 const SEED = path.join(ROOT, "data", `logs-cache.${MODE}.json`);
 
 function cacheDir() {
@@ -47,19 +48,37 @@ async function treasuryLogs(D) {
   const safe = latest > TAIL ? latest - TAIL : 0n;
   const get = async (from, to) => (await publicClient.getLogs({ address: D.treasury, fromBlock: from, toBlock: to }))
     .map((l) => ({ address: l.address, data: l.data, topics: l.topics, transactionHash: l.transactionHash, blockNumber: String(l.blockNumber), logIndex: l.logIndex }));
+  // Fetch windows a few at a time instead of one-by-one: a cold start can be thousands of blocks behind.
+  const windows = (start, end) => { const w = []; for (let f = start; f <= end; f += STEP + 1n) w.push([f, f + STEP > end ? end : f + STEP]); return w; };
+  const fetchAll = async (ws) => {
+    const out = [];
+    for (let i = 0; i < ws.length; i += SCAN_PARALLEL) out.push(...(await Promise.all(ws.slice(i, i + SCAN_PARALLEL).map(([a, b]) => get(a, b)))).flat());
+    return out;
+  };
   let from = BigInt(cache.next);
-  while (from <= safe) {
-    const to = from + STEP > safe ? safe : from + STEP;
-    cache.logs.push(...(await get(from, to)));
-    from = to + 1n; cache.next = String(from);
+  if (from <= safe) {
+    const ws = windows(from, safe);
+    for (let i = 0; i < ws.length; i += SCAN_PARALLEL * 4) {
+      const chunk = ws.slice(i, i + SCAN_PARALLEL * 4);
+      cache.logs.push(...(await fetchAll(chunk)));
+      from = chunk[chunk.length - 1][1] + 1n; cache.next = String(from);
+    }
     saveCache();
   }
-  const tail = [];
-  for (let f = from; f <= latest; f += STEP + 1n) tail.push(...(await get(f, f + STEP > latest ? latest : f + STEP)));
+  const tail = await fetchAll(windows(from, latest));
   const seen = new Set(); const all = [];
   for (const l of [...cache.logs, ...tail]) { const k = l.transactionHash + ":" + l.logIndex; if (!seen.has(k)) { seen.add(k); all.push(l); } }
   all.sort((x, y) => (BigInt(x.blockNumber) === BigInt(y.blockNumber) ? x.logIndex - y.logIndex : (BigInt(x.blockNumber) < BigInt(y.blockNumber) ? -1 : 1)));
   return all.map((l) => ({ ...l, blockNumber: BigInt(l.blockNumber) }));
+}
+
+const proven = new Set();
+async function provenSettlement(ref, payer, amount) {
+  const k = `${ref}:${payer}:${amount}`.toLowerCase();
+  if (proven.has(k)) return true;
+  const ok = await verifySettlement(ref, payer, amount).catch(() => false);
+  if (ok) proven.add(k);
+  return ok;
 }
 
 const sum = (xs, f) => xs.reduce((a, x) => a + BigInt(f(x)), 0n);
@@ -78,27 +97,28 @@ export async function buildState(activity = []) {
     await Promise.all(["reserveBalance", "stockBudget", "cashBalance", "totalRevenue", "totalOpex", "totalInvested", "reserveTarget", "investBps", "nav", "unaccounted"].map((f) => read(f)));
   const usdcBal = await publicClient.readContract({ address: USDC, abi: ERC20_ABI, functionName: "balanceOf", args: [D.treasury] });
 
-  const holdings = [];
-  for (const st of D.stocks) {
-    const [allowed, maxWeightBps] = await read("stocks", [st.address]);
-    const balance = await publicClient.readContract({ address: st.address, abi: ERC20_ABI, functionName: "balanceOf", args: [D.treasury] });
-    const value = await read("stockValue", [st.address]);
-    const weightBps = await read("weightBps", [st.address]);
-    const price = await publicClient.readContract({ address: D.exchange, abi: EXCHANGE_ABI, functionName: "priceUsdc6", args: [st.address] });
+  const holdings = await Promise.all(D.stocks.map(async (st) => {
+    const [[allowed, maxWeightBps], balance, value, weightBps, price] = await Promise.all([
+      read("stocks", [st.address]),
+      publicClient.readContract({ address: st.address, abi: ERC20_ABI, functionName: "balanceOf", args: [D.treasury] }),
+      read("stockValue", [st.address]),
+      read("weightBps", [st.address]),
+      publicClient.readContract({ address: D.exchange, abi: EXCHANGE_ABI, functionName: "priceUsdc6", args: [st.address] }),
+    ]);
     const mine = buys.filter((b) => b.stock.toLowerCase() === st.address.toLowerCase());
     const out = stockW.filter((w) => w.stock.toLowerCase() === st.address.toLowerCase());
-    holdings.push({ ...st, allowed, maxWeightBps: Number(maxWeightBps), balance: s(balance), value: s(value), weightBps: Number(weightBps), price: s(price),
-      bought: s(sum(mine, (b) => b.stockOut)), withdrawn: s(sum(out, (w) => w.amount)), costBasis: s(sum(mine, (b) => b.usdcIn)) });
-  }
+    return { ...st, allowed, maxWeightBps: Number(maxWeightBps), balance: s(balance), value: s(value), weightBps: Number(weightBps), price: s(price),
+      bought: s(sum(mine, (b) => b.stockOut)), withdrawn: s(sum(out, (w) => w.amount)), costBasis: s(sum(mine, (b) => b.usdcIn)) };
+  }));
 
   // Per-payment settlement proof: the payment ref is the x402 settlement tx; check its USDC Transfer to the treasury.
-  const payRows = [];
-  for (const p of payments) {
+  // A settlement tx is immutable once mined, so a positive proof is remembered for the life of the process.
+  const payRows = await Promise.all(payments.map(async (p) => {
     const a = allocs.find((x) => x.paymentRef === p.paymentRef) || {};
-    payRows.push({ ref: p.paymentRef, payer: p.payer, amount: s(p.amount), job: p.job, bookedTx: p.tx, block: p.block,
+    return { ref: p.paymentRef, payer: p.payer, amount: s(p.amount), job: p.job, bookedTx: p.tx, block: p.block,
       toReserve: s(a.toReserve ?? 0n), toStocks: s(a.toStocks ?? 0n), toCash: s(a.toCash ?? 0n),
-      settlementVerified: await verifySettlement(p.paymentRef, p.payer, p.amount).catch(() => false) });
-  }
+      settlementVerified: await provenSettlement(p.paymentRef, p.payer, p.amount) };
+  }));
 
   const R = {
     paid: sum(payments, (p) => p.amount), toReserve: sum(allocs, (a) => a.toReserve), toStocks: sum(allocs, (a) => a.toStocks), toCash: sum(allocs, (a) => a.toCash),
@@ -127,4 +147,59 @@ export async function buildState(activity = []) {
     buys: buys.map((b) => ({ ...b, usdcIn: s(b.usdcIn), stockOut: s(b.stockOut), weightBpsAfter: s(b.weightBpsAfter), symbol: D.stocks.find((x) => x.address.toLowerCase() === b.stock.toLowerCase())?.symbol })),
     holdings, reconciliation: { allOk: checks.every((c) => c.ok), checks }, activity: activity.slice(-30), generatedAt: new Date().toISOString(),
   };
+}
+
+// ---- Served state: answer instantly from the last good report, rebuild in the background. ----
+// Order of preference on a request: in-memory report → on-disk report from this instance → the
+// snapshot committed in server/data (so even a cold Render boot paints real numbers at once).
+const SNAP_SEED = path.join(ROOT, "data", `state-snapshot.${MODE}.json`);
+const SNAP = path.join(cacheDir(), `state-snapshot.${MODE}.json`);
+const MAX_AGE_MS = Number(process.env.STATE_MAX_AGE_MS || 20_000);
+let served = null; let builtAt = 0; let building = null; let dirty = false; let lastError = null;
+
+function loadSnapshot() {
+  const D = deployments();
+  for (const p of [SNAP, SNAP_SEED]) {
+    try { const j = JSON.parse(fs.readFileSync(p, "utf8")); if (j?.contracts?.treasury === D.treasury) return j; } catch {}
+  }
+  return null;
+}
+
+export function refreshState(activity) {
+  if (building) return building;
+  dirty = false;
+  const t0 = Date.now();
+  building = buildState(activity)
+    .then((st) => {
+      served = st; builtAt = Date.now(); lastError = null;
+      try { fs.writeFileSync(SNAP, JSON.stringify(st)); } catch {}
+      console.log(`state rebuilt in ${Date.now() - t0} ms`);
+      return st;
+    })
+    .catch((e) => { lastError = e.shortMessage || e.message; console.log(`state rebuild failed: ${lastError}`); throw e; })
+    .finally(() => { building = null; });
+  return building;
+}
+
+/** Mark the report stale (after the agent books a payment or pays opex). */
+export function invalidateState() { dirty = true; }
+
+const withMeta = (st, extra) => ({ ...st, ...extra, activity: extra.activity ?? st.activity });
+
+/** The report to send right now. `fresh` waits for a rebuild (used by scripts, not by the dashboard). */
+export async function currentState(activity, { fresh = false } = {}) {
+  if (fresh || dirty) return withMeta(await refreshState(activity), { live: true, ageMs: 0 });
+  if (!served) {
+    const snap = loadSnapshot();
+    const job = refreshState(activity).catch(() => null);
+    if (!snap) {
+      const st = await job;
+      if (!st) throw new Error(lastError || "state unavailable");
+      return withMeta(st, { live: true, ageMs: 0 });
+    }
+    return withMeta(snap, { live: false, snapshot: true, refreshing: true, activity: activity.slice(-30) });
+  }
+  const age = Date.now() - builtAt;
+  if (age > MAX_AGE_MS) refreshState(activity).catch(() => {});
+  return withMeta(served, { live: true, ageMs: age, refreshing: Boolean(building), activity: activity.slice(-30) });
 }
