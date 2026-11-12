@@ -10,12 +10,18 @@ const log = [];
 const unpaid = await fetch(`${BASE}/clip`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
 log.push({ step: "unpaid request", status: unpaid.status, paymentRequired: !!unpaid.headers.get("payment-required") });
 console.log(`unpaid POST /clip -> HTTP ${unpaid.status}`);
-for (let i = 0; i < 6; i++) {
+const JOBS = Number(process.env.E2E_JOBS || 6);
+for (let i = 0; i < JOBS; i++) {
   if (i === 4) {
     const r = await fetch(`${BASE}/admin/opex`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ amount: "200000", memo: "transcription + render minutes" }) }).then((r) => r.json());
     console.log(`opex 0.20 USDC from reserve -> ${r.tx}`); log.push({ step: "opex", ...r });
   }
-  const r = await buyClip({ start: 5 + i * 10, end: 20 + i * 10, headline: heads[i] });
+  let r = await buyClip({ start: 5 + i * 10, end: 20 + i * 10, headline: heads[i] });
+  if (r.status !== 200) { // public facilitator occasionally rejects; nothing is charged in that case, so retry once with a fresh authorization
+    console.log(`paid clip ${i + 1}: HTTP ${r.status} (${JSON.stringify(r.body).slice(0, 160)}), retrying once`);
+    log.push({ step: `paid clip ${i + 1} first attempt`, status: r.status, body: r.body });
+    r = await buyClip({ start: 5 + i * 10, end: 20 + i * 10, headline: heads[i] });
+  }
   console.log(`paid clip ${i + 1}: HTTP ${r.status} settle tx ${r.settle?.transaction} clip ${r.body.clip?.url}`);
   log.push({ step: `paid clip ${i + 1}`, status: r.status, settlement: r.settle, clip: r.body.clip });
 }

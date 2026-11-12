@@ -19,7 +19,7 @@ async function write(functionName, args) {
 
 /** Confirm onchain that the x402 settlement tx really moved `amount` USDC from payer to the treasury. */
 export async function verifySettlement(txHash, payer, amount) {
-  const rc = await publicClient.getTransactionReceipt({ hash: txHash });
+  const rc = await publicClient.waitForTransactionReceipt({ hash: txHash, timeout: 60_000 });
   for (const l of rc.logs) {
     if (l.address.toLowerCase() !== USDC.toLowerCase()) continue;
     try {

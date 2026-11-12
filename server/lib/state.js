@@ -1,14 +1,50 @@
 // Builds the public dashboard state from onchain events + balances and reconciles them.
 import { publicClient, deployments, TREASURY_ABI, EXCHANGE_ABI, ERC20_ABI, USDC, MODE, EXPLORER } from "./chain.js";
 import { verifySettlement } from "./agent.js";
+import { parseEventLogs } from "viem";
+import fs from "node:fs";
+import path from "node:path";
+import { ROOT } from "./chain.js";
+
+// Public Base Sepolia RPC caps eth_getLogs at a 200-block range, so we scan in windows
+// and cache the raw treasury logs on disk (logs-cache.<mode>.json) so restarts stay cheap.
+const STEP = BigInt(process.env.LOGS_BLOCK_RANGE || 199);
+const CACHE = path.join(ROOT, `logs-cache.${MODE}.json`);
+let cache = null;
+async function treasuryLogs(D) {
+  if (!cache) {
+    try { cache = JSON.parse(fs.readFileSync(CACHE, "utf8")); } catch {}
+    if (!cache || cache.treasury !== D.treasury) cache = { treasury: D.treasury, next: String(D.startBlock), logs: [] };
+  }
+  // Load-balanced public RPC nodes can lag a few blocks, so only blocks older than TAIL are cached;
+  // the newest TAIL blocks are re-read on every call and de-duplicated.
+  const TAIL = 30n;
+  const latest = await publicClient.getBlockNumber();
+  const safe = latest > TAIL ? latest - TAIL : 0n;
+  const get = async (from, to) => (await publicClient.getLogs({ address: D.treasury, fromBlock: from, toBlock: to }))
+    .map((l) => ({ address: l.address, data: l.data, topics: l.topics, transactionHash: l.transactionHash, blockNumber: String(l.blockNumber), logIndex: l.logIndex }));
+  let from = BigInt(cache.next);
+  while (from <= safe) {
+    const to = from + STEP > safe ? safe : from + STEP;
+    cache.logs.push(...(await get(from, to)));
+    from = to + 1n; cache.next = String(from);
+  }
+  fs.writeFileSync(CACHE, JSON.stringify(cache));
+  const tail = [];
+  for (let f = from; f <= latest; f += STEP + 1n) tail.push(...(await get(f, f + STEP > latest ? latest : f + STEP)));
+  const seen = new Set(); const all = [];
+  for (const l of [...cache.logs, ...tail]) { const k = l.transactionHash + ":" + l.logIndex; if (!seen.has(k)) { seen.add(k); all.push(l); } }
+  all.sort((x, y) => (BigInt(x.blockNumber) === BigInt(y.blockNumber) ? x.logIndex - y.logIndex : (BigInt(x.blockNumber) < BigInt(y.blockNumber) ? -1 : 1)));
+  return all.map((l) => ({ ...l, blockNumber: BigInt(l.blockNumber) }));
+}
 
 const sum = (xs, f) => xs.reduce((a, x) => a + BigInt(f(x)), 0n);
 const s = (v) => v.toString();
 
 export async function buildState(activity = []) {
   const D = deployments();
-  const fromBlock = BigInt(D.startBlock);
-  const ev = async (eventName) => (await publicClient.getContractEvents({ address: D.treasury, abi: TREASURY_ABI, eventName, fromBlock }))
+  const parsed = parseEventLogs({ abi: TREASURY_ABI, logs: await treasuryLogs(D) });
+  const ev = async (eventName) => parsed.filter((l) => l.eventName === eventName)
     .map((l) => ({ ...l.args, tx: l.transactionHash, block: Number(l.blockNumber) }));
   const read = (functionName, args = []) => publicClient.readContract({ address: D.treasury, abi: TREASURY_ABI, functionName, args });
 

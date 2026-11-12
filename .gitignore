@@ -15,3 +15,4 @@ video/assets/
 video/remotion/public/
 video/remotion/out/
 .DS_Store
+server/logs-cache.*.json

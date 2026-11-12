@@ -43,7 +43,9 @@ const resourceServer = new x402ResourceServer(facilitator)
     const { result, requirements } = ctx;
     if (!result?.success) return;
     await onPaid({ txHash: result.transaction, payer: result.payer, amount: requirements.amount, job: "clip" });
-  });
+  })
+  .onVerifyFailure(async (ctx) => { const m = `x402 verify failed: ${ctx.error?.message || JSON.stringify(ctx.result || {})}`; activity.push(m); console.log(m); })
+  .onSettleFailure(async (ctx) => { const m = `x402 settle failed: ${ctx.error?.message || "unknown"}`; activity.push(m); console.log(m); });
 
 const app = express();
 app.use(express.json());

@@ -14,7 +14,27 @@ Built for Base's [Stocks Maxxing](https://www.base.org/stocksmaxxing) season, tr
 
 ![ClipFund dashboard](docs/dashboard.png)
 
-> **Testnet only.** This runs against Base Sepolia (chain 84532), using test USDC and throwaway keys. `sCOIN` and `sNVDA` are simulated test tokens priced by a mock exchange. They mirror the shape of Coinbase's tokenized stocks (COINc, NVDAc) on Base mainnet, but they carry no rights in any company and have no affiliation with any issuer.
+> **Testnet only.** Live on the public Base Sepolia testnet (chain 84532), using test USDC and throwaway keys. `sCOIN` and `sNVDA` are simulated test tokens priced by a mock exchange. They mirror the shape of Coinbase's tokenized stocks (COINc, NVDAc) on Base mainnet, but they carry no rights in any company and have no affiliation with any issuer.
+
+## Live on Base Sepolia testnet
+
+ClipFund is deployed on the public Base Sepolia testnet (chain 84532). Payments go through the public x402 facilitator (`https://x402.org/facilitator`). Eight paid clip jobs have run end to end: $4.00 in test USDC came in, $1.00 sits in the reserve, and a $0.20 operating cost was paid from it. The agent made 12 stock buys worth $1.68, and $1.12 stayed as cash. All 12 reconciliation checks pass. Full run record: `docs/live-run-base-sepolia.json`.
+
+| Contract | Address |
+|---|---|
+| ClipFundTreasury | [0xf4e808d0159d13f9b6e75674c9247ae3c078d3d5](https://sepolia.basescan.org/address/0xf4e808d0159d13f9b6e75674c9247ae3c078d3d5) |
+| SimStockExchange (mock venue and price feed) | [0x18a776641516ecb570d6f9656661984254761cc8](https://sepolia.basescan.org/address/0x18a776641516ecb570d6f9656661984254761cc8) |
+| sCOIN (simulated test stock) | [0xea190a2661b2d12ba29a552287c5825db5e5a1c5](https://sepolia.basescan.org/token/0xea190a2661b2d12ba29a552287c5825db5e5a1c5) |
+| sNVDA (simulated test stock) | [0xf469a6092a8543169bcf7c75cd9a433b86bcbdb8](https://sepolia.basescan.org/token/0xf469a6092a8543169bcf7c75cd9a433b86bcbdb8) |
+| Test USDC (Circle) | [0x036CbD53842c5426634e7929541eC2318f3dCF7e](https://sepolia.basescan.org/token/0x036CbD53842c5426634e7929541eC2318f3dCF7e) |
+
+One payment, traced through every step:
+- x402 settlement (0.50 USDC, buyer to treasury): [0x734156fb…de2b6d](https://sepolia.basescan.org/tx/0x734156fbe9296c675b7f930b68f22da2c1812646214792663e81bb7205de2b6d)
+- `recordPayment`, which splits it by the rules: [0x0a332a75…5e257d9f](https://sepolia.basescan.org/tx/0x0a332a75b0b86e647c5dfd111396f9ba3cee713a7d14b7a6a43ebcc55e257d9f)
+- First stock buy (0.15 USDC to sCOIN, from the stock budget only): [0xf9703636…ed4b4754](https://sepolia.basescan.org/tx/0xf9703636fc17584cfe75049cb389163387fd872fd744761f814c3305ed4b4754)
+- Operating cost paid from the reserve (0.20 USDC): [0xf74644fe…16903a](https://sepolia.basescan.org/tx/0xf74644fef1437de66ce5f0baa220723cd62fbf78e2c9fe46a307126cb916903a)
+
+The stock tokens are still simulated. sCOIN and sNVDA are test tokens with fixed mock prices, because Coinbase's tokenized stocks are on Base mainnet only. They carry no rights in any company.
 
 ## What's in here
 
@@ -77,9 +97,9 @@ On a local fork the public facilitator can't see your chain, so the server runs 
 
 ## What's simulated
 
-- The recorded demo ran on a local anvil fork of Base Sepolia, not on the public testnet.
+- The demo video was recorded on a local anvil fork. The same contracts are now live on public Base Sepolia (addresses above).
 - `sCOIN` and `sNVDA` are simulated test tokens with fixed prices ($250 and $160). On mainnet, the `IStockVenue` adapter would point at a real venue with a Chainlink feed, and the allowlist would hold the real token addresses.
-- In local mode, the x402 facilitator runs in-process.
+- In local mode only, the x402 facilitator runs in-process. On Base Sepolia it uses the public facilitator at x402.org.
 - The clip source is a synthetic test pattern.
 
 ## License
