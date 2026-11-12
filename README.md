@@ -47,6 +47,16 @@ One payment, traced through every step:
 
 The stock tokens are still simulated. sCOIN and sNVDA are test tokens with fixed mock prices, because Coinbase's tokenized stocks are on Base mainnet only. They carry no rights in any company.
 
+## Try it with your own wallet
+
+Open the **Try it** tab on the [live dashboard](https://clipfund-szbe.onrender.com/#tryit) (on a phone, inside the MetaMask app's browser):
+
+1. **Connect wallet.** The page asks your wallet to switch to (or add) Base Sepolia, chain 84532, and shows your test ETH, test USDC, sCOIN and sNVDA.
+2. **Buy a clip.** You sign one EIP-3009 `TransferWithAuthorization` for $0.50 test USDC. The x402 facilitator settles it straight into the treasury and the agent books it like every other payment. You pay no gas.
+3. **Swap.** Approve, then swap your own test USDC into sCOIN or sNVDA on the public `SimStockExchange.buy()`. This needs a little Base Sepolia ETH for gas. The demo exchange is buy-only.
+
+Test USDC: [faucet.circle.com](https://faucet.circle.com) (USDC, Base Sepolia). Visitor swaps never touch the treasury, so every reconciliation check still holds. `server/scripts/tryit-e2e.mjs` runs the whole flow in a headless phone browser with an injected test wallet.
+
 ## What's in here
 
 | Path | What it is |

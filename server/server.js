@@ -7,7 +7,8 @@ import { HTTPFacilitatorClient } from "@x402/core/server";
 import { x402Facilitator } from "@x402/core/facilitator";
 import { ExactEvmScheme as ExactEvmFacilitator } from "@x402/evm/exact/facilitator";
 import { toFacilitatorEvmSigner } from "@x402/evm";
-import { MODE, NETWORK, ROOT, wallet, deployments } from "./lib/chain.js";
+import { MODE, NETWORK, ROOT, wallet, deployments, publicClient, ERC20_ABI, EXCHANGE_ABI, USDC, EXPLORER } from "./lib/chain.js";
+import { isAddress, getAddress } from "viem";
 import { onPaid, payOpex, activity, idle } from "./lib/agent.js";
 import { makeClip, CLIPS_DIR } from "./lib/clip.js";
 import fs from "node:fs";
@@ -93,6 +94,27 @@ app.get("/api/state", async (_req, res) => {
     if (fresh) await idle();
     res.set("Cache-Control", "no-store").json(await currentState(activity, { fresh }));
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// "Try it" tab: balances + live prices for a visitor's own wallet (read-only, no keys involved).
+const ALLOWANCE_ABI = [{ type: "function", name: "allowance", stateMutability: "view", inputs: [{ name: "o", type: "address" }, { name: "s", type: "address" }], outputs: [{ type: "uint256" }] }];
+app.get("/api/wallet/:addr", async (req, res) => {
+  if (!isAddress(req.params.addr)) return res.status(400).json({ error: "bad address" });
+  const a = getAddress(req.params.addr);
+  const bal = (token) => publicClient.readContract({ address: token, abi: ERC20_ABI, functionName: "balanceOf", args: [a] });
+  try {
+    const [eth, usdc, allowance, stocks] = await Promise.all([
+      publicClient.getBalance({ address: a }), bal(USDC),
+      publicClient.readContract({ address: USDC, abi: ALLOWANCE_ABI, functionName: "allowance", args: [a, D.exchange] }),
+      Promise.all(D.stocks.map(async (st) => {
+        const [balance, price] = await Promise.all([bal(st.address),
+          publicClient.readContract({ address: D.exchange, abi: EXCHANGE_ABI, functionName: "priceUsdc6", args: [st.address] })]);
+        return { symbol: st.symbol, mirrors: st.mirrors, address: st.address, balance: balance.toString(), price: price.toString() };
+      })),
+    ]);
+    res.set("Cache-Control", "no-store").json({ address: a, chainId: D.chainId, explorer: EXPLORER, usdc: USDC, exchange: D.exchange, treasury: D.treasury,
+      eth: eth.toString(), usdcBalance: usdc.toString(), allowance: allowance.toString(), stocks });
+  } catch (e) { res.status(502).json({ error: e.shortMessage || e.message }); }
 });
 
 // Demo-only admin hook (localhost) so the e2e script can show an operating cost paid from the reserve.

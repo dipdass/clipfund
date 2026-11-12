@@ -49,6 +49,28 @@ footer{color:var(--mut);font-size:12px;text-align:center;padding:18px var(--pad)
 .links a{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border-radius:10px;background:#eef0ff;text-decoration:none;font-size:12.5px;font-weight:600}
 .sk{background:linear-gradient(90deg,#eceef7 25%,#f6f7fc 50%,#eceef7 75%);background-size:200% 100%;animation:sh 1.2s linear infinite;border-radius:8px;height:14px;margin:6px 0}
 .sk.lg{height:28px;width:60%}@keyframes sh{to{background-position:-200% 0}}
+/* Try it */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:46px;padding:0 18px;border-radius:12px;border:0;background:var(--blue);color:#fff;font-family:inherit;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none}
+.btn.sec{background:#eef0ff;color:var(--blue)}.btn.sm{min-height:40px;padding:0 12px;font-size:13px}.btn:disabled{opacity:.45;cursor:default}
+.btn.full{width:100%}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#fff4d6;color:#6b4e00;vertical-align:middle}
+.wl{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.bals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+.bals div{background:#f3f4fb;border-radius:10px;padding:9px 11px;min-width:0}.bals b{display:block;font-size:16px;overflow-wrap:anywhere}
+.seg{display:flex;background:#eef0ff;border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;min-height:42px;border:0;border-radius:10px;background:none;font-family:inherit;font-weight:600;font-size:14px;color:var(--mut);cursor:pointer}
+.seg button[aria-pressed=true]{background:#fff;color:var(--blue);box-shadow:0 1px 3px rgba(0,0,40,.12)}
+.fld{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:0 12px;background:#fff;margin-top:10px}
+.fld input{flex:1;min-width:0;border:0;outline:0;font-family:inherit;font-weight:600;font-size:20px;padding:12px 0;background:none;color:var(--ink)}
+.fld span{color:var(--mut);font-weight:600}
+.chips{display:flex;gap:6px;margin-top:8px}.chips button{flex:1;min-height:38px;border:1px solid var(--line);background:#fff;border-radius:10px;font-family:inherit;font-weight:600;font-size:13px;color:var(--ink);cursor:pointer}
+.quote{margin:10px 0;font-size:13px;color:var(--mut)}.quote b{color:var(--ink)}
+.steps{display:flex;gap:8px;margin-top:4px}.steps .btn{flex:1}
+.msg{margin-top:10px;font-size:13px;border-radius:10px;padding:10px 12px;background:#f3f4fb;overflow-wrap:anywhere}
+.msg.ok{background:#e6f6ee;color:#0b5a33;font-weight:500}.msg.bad{background:#fdeaea;color:#8a1c1c;font-weight:500}
+.msg a{font-weight:600}
+.help li{margin:4px 0}.help{padding-left:18px;margin:6px 0 0}
+#tryit-head input[type=text]{width:100%}
 .tabs,.dots,.hint{display:none}
 .panel+.panel{margin-top:14px}
 @media (min-width:821px){.track{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:14px}.track>.panel{grid-column:1/-1}.track>#p-buys{grid-column:1}.track>#p-holdings{grid-column:2}.track>#p-buys,.track>#p-holdings{display:flex;flex-direction:column}.track>#p-buys .card,.track>#p-holdings .card{flex:1}}
@@ -96,6 +118,35 @@ Payments use Base Sepolia test USDC. <b>sCOIN / sNVDA are SIMULATED test stock t
   <div class="grid g4" id="kpis"></div>
   <div class="flow" id="flow"></div>
   <div class="card"><h2>Policy (enforced by ClipFundTreasury)</h2><div id="policy"></div></div>
+ </section>
+ <section class="panel" id="p-tryit" data-title="Try it" role="tabpanel">
+  <div class="card" id="w-card"><div class="wl"><h2 style="margin:0">Your wallet <span class="tag">TESTNET</span></h2><span class="sub" id="w-net"></span></div>
+   <div id="w-body"><p class="sub" style="margin:8px 0 12px">Connect your own wallet and try ClipFund yourself on Base Sepolia. Everything here uses test USDC and simulated stock tokens, so nothing has real value.</p>
+   <button class="btn full" id="w-connect">Connect wallet</button></div>
+  </div>
+  <div class="card mt"><h2>1 · Buy a clip <span style="text-transform:none;letter-spacing:0">(pay with x402, no gas)</span></h2>
+   <p class="sub" style="margin:0 0 6px">You sign one USDC authorization; the x402 facilitator settles it straight into the treasury, and the agent books it like every other payment.</p>
+   <div class="fld"><input type="text" id="c-head" maxlength="40" value="BTC JUST BROKE OUT" aria-label="Clip headline" style="font-size:15px"><span>headline</span></div>
+   <button class="btn full mt" id="c-buy" disabled>Buy a clip for $0.50 test USDC</button>
+   <div id="c-msg"></div>
+  </div>
+  <div class="card mt"><h2>2 · Swap test USDC → stock token</h2>
+   <div class="seg" id="s-pick" role="group" aria-label="Stock token"><button aria-pressed="true">sCOIN</button><button aria-pressed="false">sNVDA</button></div>
+   <div class="fld"><input type="number" inputmode="decimal" id="s-amt" min="0.1" step="0.1" value="1" aria-label="USDC amount"><span>USDC</span></div>
+   <div class="chips" id="s-chips"><button data-v="0.5">$0.50</button><button data-v="1">$1</button><button data-v="2">$2</button><button data-v="max">Max</button></div>
+   <div class="quote" id="s-quote">Connect a wallet to get a quote.</div>
+   <div class="steps"><button class="btn sec" id="s-approve" disabled>1. Approve</button><button class="btn" id="s-swap" disabled>2. Swap</button></div>
+   <div id="s-msg"></div>
+   <div class="sub" style="margin-top:10px">The demo exchange sells at a fixed, disclosed sim price and is buy-only: there is no sell-back for these test tokens. Swaps need a little Base Sepolia ETH for gas.</div>
+  </div>
+  <div class="card mt"><h2>Need test funds?</h2>
+   <ol class="help">
+    <li><b>Test USDC:</b> open <a href="https://faucet.circle.com" target="_blank" rel="noopener">faucet.circle.com</a>, pick <b>USDC</b> + <b>Base Sepolia</b>, paste your address. You get 10 test USDC.</li>
+    <li><b>Test ETH for gas</b> (only for the swap): any Base Sepolia faucet, e.g. <a href="https://portal.cdp.coinbase.com/products/faucet" target="_blank" rel="noopener">Coinbase CDP faucet</a> or <a href="https://www.alchemy.com/faucets/base-sepolia" target="_blank" rel="noopener">Alchemy</a>. A tiny amount is plenty.</li>
+    <li>Buying a clip costs no gas at all, only the $0.50 test USDC.</li>
+   </ol>
+   <p class="sub" style="margin:8px 0 0">Never use a wallet that holds real funds you care about for experiments, and never share your seed phrase. This page only asks for signatures you can read in your wallet.</p>
+  </div>
  </section>
  <section class="panel" id="p-payments" data-title="Payments" role="tabpanel">
   <div class="card"><h2>Payments → allocation <span style="text-transform:none;letter-spacing:0">(each = one x402 settlement)</span></h2><div id="payments"></div></div>
@@ -215,5 +266,7 @@ if(!first){ try{ const c=JSON.parse(localStorage.getItem('cf-state')); if(c) fir
 if(first){ last=first; render(first); } else skeleton();
 const hi=panels.findIndex(p=>p.id==='p-'+location.hash.slice(1)); if(hi>0) requestAnimationFrame(()=>go(hi,false));
 if(first&&first.live){ lastAt=Date.now(); schedule(); } else load();
+window.cfReload=()=>{ clearTimeout(timer); load(); };
 })();
-</script></body></html>
+</script>
+<script src="/tryit.js?v=2" defer></script></body></html>
