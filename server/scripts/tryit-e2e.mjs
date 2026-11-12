@@ -10,6 +10,7 @@ const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_CORE || "/workspace/clipfund/video/node_modules/playwright-core");
 
 const BASE = process.env.CLIPFUND_URL || "http://localhost:4021";
+const API = process.env.CLIPFUND_API || (/github\.io/.test(BASE) ? "https://clipfund-szbe.onrender.com" : BASE); // Pages is static; the API lives on Render
 const SHOTS = process.env.SHOTS || "../handoff";
 const account = privateKeyToAccount(process.env.BUYER_PK);
 const wc = createWalletClient({ account, chain: baseSepolia, transport: http(process.env.RPC_URL || "https://sepolia.base.org") });
@@ -51,7 +52,7 @@ page.on("pageerror", (e) => console.log("pageerror", e.message));
 const shot = (n) => page.screenshot({ path: `${SHOTS}/tryit-${n}.png`, fullPage: true });
 const until = (sel, re, ms = 120000) => page.waitForFunction(([s, r]) => new RegExp(r).test(document.querySelector(s)?.innerText || ""), [sel, re], { timeout: ms, polling: 500 })
   .catch(async (e) => { console.log("timeout on", sel, "text:", (await page.innerText(sel).catch(() => "")).replace(/\s+/g, " "), "rpc:", log.slice(-8).join(",")); await shot("fail"); throw e; });
-const bal = async () => (await (await fetch(`${BASE}/api/wallet/${account.address}`)).json());
+const bal = async () => (await (await fetch(`${API}/api/wallet/${account.address}`)).json());
 
 const before = await bal();
 // a plain phone browser with no wallet gets the "Open in MetaMask" deep link
@@ -104,7 +105,7 @@ const after = await bal();
 console.log("USDC", before.usdcBalance, "->", after.usdcBalance, "| sCOIN", before.stocks[0].balance, "->", after.stocks[0].balance, "| ETH", before.eth, "->", after.eth);
 // let the agent book the payment, then check the Payments tab + reconciliation
 await new Promise((r) => setTimeout(r, 12000));
-const st = await (await fetch(`${BASE}/api/state?fresh=1`)).json();
+const st = await (await fetch(`${API}/api/state?fresh=1`)).json();
 console.log("payments:", st.totals.payments, "recon allOk:", st.reconciliation.allOk, st.reconciliation.checks.filter((c) => !c.ok).map((c) => c.name));
 await page.goto(`${BASE}/#payments`, { waitUntil: "networkidle" });
 await page.waitForTimeout(1500);
