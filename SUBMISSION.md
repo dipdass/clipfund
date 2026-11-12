@@ -72,7 +72,7 @@ All four contracts have verified source code (exact match, solc 0.8.26, 200 opti
 ## What is real and what is simulated
 - **Real:** the x402 protocol flow (official `@x402/express`, `@x402/fetch`, `@x402/evm` v2.30), EIP-712/EIP-3009 signatures, test USDC on the public Base Sepolia testnet, settled through the public x402 facilitator, the treasury contract and its rules, the ffmpeg clipping, and the onchain reconciliation.
 - **Simulated (disclosed):** Coinbase tokenized stocks such as COINc and NVDAc exist on **Base mainnet** only, and none were found on Base Sepolia. So `sCOIN` and `sNVDA` are SIMULATED 8-decimal test tokens, minted by `SimStockExchange` at fixed demo prices of $250 and $160. They give **no rights in any company**, and they are not affiliated with Coinbase, NVIDIA, or any issuer. On mainnet, the `IStockVenue` adapter would swap to a real venue plus a Chainlink price feed, and the allowlist would point to the real token addresses.
-- **Testnet only:** everything runs on Base Sepolia with test USDC and throwaway keys, so there's no real money. The demo video was recorded on a local fork before the public deploy; the contracts and flow are the same. `./demo.sh` still runs the local-fork version with an in-process facilitator.
+- **Testnet only:** everything runs on Base Sepolia with test USDC and throwaway keys, so there's no real money. The demo video was recorded on the live Base Sepolia testnet. `./demo.sh` still runs the local-fork version with an in-process facilitator.
 - **Demo source video:** a synthetic test pattern, so no third-party footage is used.
 
 ## Why it matters

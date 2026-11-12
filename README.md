@@ -106,7 +106,7 @@ On a local fork the public facilitator can't see your chain, so the server runs 
 
 ## What's simulated
 
-- The demo video was recorded on a local anvil fork. The same contracts are now live on public Base Sepolia (addresses above).
+- The demo video was recorded on the live public Base Sepolia deployment (addresses above).
 - `sCOIN` and `sNVDA` are simulated test tokens with fixed prices ($250 and $160). On mainnet, the `IStockVenue` adapter would point at a real venue with a Chainlink feed, and the allowlist would hold the real token addresses.
 - In local mode only, the x402 facilitator runs in-process. On Base Sepolia it uses the public facilitator at x402.org.
 - The clip source is a synthetic test pattern.
