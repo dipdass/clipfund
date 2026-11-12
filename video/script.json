@@ -1,0 +1,170 @@
+[
+ {
+  "id": "title",
+  "min": 6,
+  "lines": [
+   [
+    "ClipFund. An AI agent that earns its own stock treasury, on Base.",
+    "ClipFund: an AI agent that earns its own stock treasury, on Base."
+   ],
+   [
+    "This is my entry for Stocks Maxxing, track two point one.",
+    "My entry for Base Stocks Maxxing \u00b7 Track 2.1"
+   ]
+  ]
+ },
+ {
+  "id": "problem",
+  "min": 8,
+  "lines": [
+   [
+    "Clipping streams is repetitive work, perfect for an agent.",
+    "Clipping streams is repetitive work, a good fit for an agent."
+   ],
+   [
+    "But agent treasuries are usually a black box, and one key can spend everything.",
+    "But agent treasuries are usually a black box, and one key can spend everything."
+   ]
+  ]
+ },
+ {
+  "id": "loop",
+  "min": 8,
+  "lines": [
+   [
+    "ClipFund sells clips for fifty cents in U S D C, paid over x four oh two, straight into a treasury contract.",
+    "ClipFund sells clips for $0.50 USDC over x402, paid straight into a treasury contract."
+   ],
+   [
+    "The contract fills a locked reserve first. Then my share of the surplus buys tokenized stocks, and the rest stays as cash.",
+    "Reserve first (locked). Then an owner-set share of the surplus buys tokenized stocks. The rest stays as USDC."
+   ]
+  ]
+ },
+ {
+  "id": "forge",
+  "min": 6,
+  "lines": [
+   [
+    "All the rules live in one contract, and all thirteen Foundry tests pass.",
+    "The rules live in one contract. All 13 Foundry tests pass, including a 512-run fuzz test."
+   ]
+  ]
+ },
+ {
+  "id": "t402",
+  "min": 6,
+  "lines": [
+   [
+    "Here's the demo, on a local fork of Base Sepolia.",
+    "Live demo on a local fork of Base Sepolia (chain 84532)."
+   ],
+   [
+    "Call the clip endpoint without paying, and you get four oh two, Payment Required.",
+    "POST /clip without paying \u2192 HTTP 402 Payment Required: 0.50 USDC to the treasury."
+   ]
+  ]
+ },
+ {
+  "id": "pay",
+  "min": 6,
+  "lines": [
+   [
+    "The client signs a U S D C authorization and retries. The clip comes back, the payment settles, and the agent books it.",
+    "Client signs an EIP-3009 USDC authorization \u2192 HTTP 200 + clip \u2192 settled onchain \u2192 recordPayment()."
+   ]
+  ]
+ },
+ {
+  "id": "reserve",
+  "min": 6,
+  "lines": [
+   [
+    "The first two payments all go to the reserve, until it hits one dollar.",
+    "Payments 1\u20132 go 100% to the locked reserve until it hits its $1.00 target."
+   ]
+  ]
+ },
+ {
+  "id": "buys",
+  "min": 8,
+  "lines": [
+   [
+    "After that, sixty percent of the surplus goes to stocks, and the agent buys s COIN and s N V D A.",
+    "Then 60% of surplus \u2192 stock budget \u2192 the agent buys sCOIN and sNVDA."
+   ],
+   [
+    "Each one is capped at thirty five percent of the treasury. Go over, and the buy reverts.",
+    "Each stock is capped at 35% of treasury NAV. Above the cap, the buy reverts."
+   ]
+  ]
+ },
+ {
+  "id": "opex",
+  "min": 8,
+  "lines": [
+   [
+    "Running costs come out of the reserve only, and the next payment tops it back up first.",
+    "Operating costs come from the reserve only, to an allowlisted payee. The next payment refills it first."
+   ]
+  ]
+ },
+ {
+  "id": "recon",
+  "min": 8,
+  "lines": [
+   [
+    "The dashboard rebuilds it all from on chain events. All twelve checks pass, and every payment matches a real settlement.",
+    "Rebuilt from onchain events: all 12 reconciliation checks pass, every payment matched to its x402 settlement tx."
+   ]
+  ]
+ },
+ {
+  "id": "clip",
+  "min": 6,
+  "lines": [
+   [
+    "And this is what the customer actually paid for.",
+    "What the customer paid for: a 9:16 headline clip, cut with ffmpeg."
+   ]
+  ]
+ },
+ {
+  "id": "safety",
+  "min": 8,
+  "lines": [
+   [
+    "The agent can't change the rules or withdraw. The reserve can't be invested. And payments can't be faked or counted twice.",
+    "The agent key can't change policy or withdraw. The reserve can't be invested. Payments can't be faked or booked twice."
+   ]
+  ]
+ },
+ {
+  "id": "sim",
+  "min": 8,
+  "lines": [
+   [
+    "To be clear, this is a testnet demo. No real money.",
+    "To be clear: testnet demo, local Base Sepolia fork, test USDC, no real money."
+   ],
+   [
+    "s COIN and s N V D A are simulated tokens with a fixed price, and the payment facilitator runs locally.",
+    "sCOIN / sNVDA are simulated test tokens (fixed mock price, no rights in any company). The x402 facilitator runs in-process."
+   ]
+  ]
+ },
+ {
+  "id": "outro",
+  "min": 5,
+  "lines": [
+   [
+    "Useful work, revenue, reserve, stocks. That's ClipFund.",
+    "Useful work \u2192 revenue \u2192 reserve \u2192 stock treasury."
+   ],
+   [
+    "Built by Dip Das.",
+    "Built by Dip Das \u00b7 @Dipdas2001"
+   ]
+  ]
+ }
+]

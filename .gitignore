@@ -1,0 +1,17 @@
+# secrets: throwaway test keys live here, never commit
+.env
+server/.env
+*.pem
+
+node_modules/
+contracts/lib/
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+server/clips/
+server/deployments.*.json
+e2e-run.*.json
+video/assets/
+video/remotion/public/
+video/remotion/out/
+.DS_Store

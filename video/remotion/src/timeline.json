@@ -1,0 +1,208 @@
+{
+ "total": 125.052,
+ "scenes": [
+  {
+   "id": "title",
+   "start": 0.0,
+   "dur": 9.083,
+   "segs": [
+    {
+     "start": 0.5,
+     "end": 4.633151927437642,
+     "text": "ClipFund: an AI agent that earns its own stock treasury, on Base."
+    },
+    {
+     "start": 5.083151927437642,
+     "end": 8.183015873015874,
+     "text": "My entry for Base Stocks Maxxing \u00b7 Track 2.1"
+    }
+   ]
+  },
+  {
+   "id": "problem",
+   "start": 9.083,
+   "dur": 9.489,
+   "segs": [
+    {
+     "start": 0.5,
+     "end": 3.7043537414965986,
+     "text": "Clipping streams is repetitive work, a good fit for an agent."
+    },
+    {
+     "start": 4.154353741496599,
+     "end": 8.58936507936508,
+     "text": "But agent treasuries are usually a black box, and one key can spend everything."
+    }
+   ]
+  },
+  {
+   "id": "loop",
+   "start": 18.572,
+   "dur": 15.41,
+   "segs": [
+    {
+     "start": 0.5,
+     "end": 7.489206349206349,
+     "text": "ClipFund sells clips for $0.50 USDC over x402, paid straight into a treasury contract."
+    },
+    {
+     "start": 7.93920634920635,
+     "end": 14.510453514739229,
+     "text": "Reserve first (locked). Then an owner-set share of the surplus buys tokenized stocks. The rest stays as USDC."
+    }
+   ]
+  },
+  {
+   "id": "forge",
+   "start": 33.983,
+   "dur": 6,
+   "segs": [
+    {
+     "start": 0.5,
+     "end": 4.8769614512471655,
+     "text": "The rules live in one contract. All 13 Foundry tests pass, including a 512-run fuzz test."
+    }
+   ]
+  },
+  {
+   "id": "t402",
+   "start": 39.983,
+   "dur": 8.979,
+   "segs": [
+    {
+     "start": 0.5,
+     "end": 3.2631746031746034,
+     "text": "Live demo on a local fork of Base Sepolia (chain 84532)."
+    },
+    {
+     "start": 3.7131746031746036,
+     "end": 8.078526077097505,
+     "text": "POST /clip without paying \u2192 HTTP 402 Payment Required: 0.50 USDC to the treasury."
+    }
+   ]
+  },
+  {
+   "id": "pay",
+   "start": 48.961,
+   "dur": 8.169,
+   "segs": [
+    {
+     "start": 0.5,
+     "end": 7.268616780045352,
+     "text": "Client signs an EIP-3009 USDC authorization \u2192 HTTP 200 + clip \u2192 settled onchain \u2192 recordPayment()."
+    }
+   ]
+  },
+  {
+   "id": "reserve",
+   "start": 57.13,
+   "dur": 6,
+   "segs": [
+    {
+     "start": 0.5,
+     "end": 4.064263038548753,
+     "text": "Payments 1\u20132 go 100% to the locked reserve until it hits its $1.00 target."
+    }
+   ]
+  },
+  {
+   "id": "buys",
+   "start": 63.13,
+   "dur": 12.984,
+   "segs": [
+    {
+     "start": 0.5,
+     "end": 6.699727891156463,
+     "text": "Then 60% of surplus \u2192 stock budget \u2192 the agent buys sCOIN and sNVDA."
+    },
+    {
+     "start": 7.149727891156463,
+     "end": 12.083968253968255,
+     "text": "Each stock is capped at 35% of treasury NAV. Above the cap, the buy reverts."
+    }
+   ]
+  },
+  {
+   "id": "opex",
+   "start": 76.114,
+   "dur": 8,
+   "segs": [
+    {
+     "start": 0.5,
+     "end": 4.85374149659864,
+     "text": "Operating costs come from the reserve only, to an allowlisted payee. The next payment refills it first."
+    }
+   ]
+  },
+  {
+   "id": "recon",
+   "start": 84.114,
+   "dur": 8.598,
+   "segs": [
+    {
+     "start": 0.5,
+     "end": 7.698185941043084,
+     "text": "Rebuilt from onchain events: all 12 reconciliation checks pass, every payment matched to its x402 settlement tx."
+    }
+   ]
+  },
+  {
+   "id": "clip",
+   "start": 92.712,
+   "dur": 6,
+   "segs": [
+    {
+     "start": 0.5,
+     "end": 2.647845804988662,
+     "text": "What the customer paid for: a 9:16 headline clip, cut with ffmpeg."
+    }
+   ]
+  },
+  {
+   "id": "safety",
+   "start": 98.712,
+   "dur": 8,
+   "segs": [
+    {
+     "start": 0.5,
+     "end": 7.0364172335600905,
+     "text": "The agent key can't change policy or withdraw. The reserve can't be invested. Payments can't be faked or booked twice."
+    }
+   ]
+  },
+  {
+   "id": "sim",
+   "start": 106.712,
+   "dur": 11.301,
+   "segs": [
+    {
+     "start": 0.5,
+     "end": 3.506984126984127,
+     "text": "To be clear: testnet demo, local Base Sepolia fork, test USDC, no real money."
+    },
+    {
+     "start": 3.956984126984127,
+     "end": 10.400521541950113,
+     "text": "sCOIN / sNVDA are simulated test tokens (fixed mock price, no rights in any company). The x402 facilitator runs in-process."
+    }
+   ]
+  },
+  {
+   "id": "outro",
+   "start": 118.013,
+   "dur": 7.04,
+   "segs": [
+    {
+     "start": 0.5,
+     "end": 4.459002267573696,
+     "text": "Useful work \u2192 revenue \u2192 reserve \u2192 stock treasury."
+    },
+    {
+     "start": 4.909002267573696,
+     "end": 6.139659863945578,
+     "text": "Built by Dip Das \u00b7 @Dipdas2001"
+    }
+   ]
+  }
+ ]
+}

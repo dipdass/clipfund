@@ -1,0 +1,7 @@
+{
+  "name": "clipfund-video",
+  "private": true,
+  "type": "module",
+  "scripts": { "render": "remotion render src/index.js Main out/demo-video.mp4 --public-dir=public --codec=h264 --audio-codec=aac" },
+  "dependencies": { "@remotion/cli": "^4.0.543", "@remotion/google-fonts": "^4.0.543", "react": "^19.3.1", "react-dom": "^19.3.1", "remotion": "^4.0.543" }
+}

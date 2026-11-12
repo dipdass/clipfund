@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ClipFund — agent that earns its stock treasury</title>
+<style>
+:root{--blue:#0000FF;--navy:#0C0E44;--ink:#0b0d2a;--mut:#5b6185;--ok:#0a8f4e;--bad:#c62828;--line:#e3e6f3}
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);background:#f5f6fb}
+header{background:var(--blue);color:#fff;padding:22px 32px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+header h1{margin:0;font-size:26px;letter-spacing:-.5px}header p{margin:4px 0 0;opacity:.85}
+.pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:rgba(255,255,255,.18)}
+.warn{background:#fff4d6;color:#6b4e00;border-bottom:1px solid #f1d58a;padding:9px 32px;font-size:13px}
+main{padding:22px 32px;max-width:1280px;margin:auto}
+.grid{display:grid;gap:14px}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}.g2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);margin:0 0 10px}
+.big{font-size:26px;font-weight:700;letter-spacing:-.5px}.sub{color:var(--mut);font-size:12px}
+.flow{display:flex;align-items:stretch;gap:10px;margin:14px 0}
+.node{flex:1;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}
+.node b{display:block;font-size:20px}.node.lock{border:2px solid var(--navy)}.node.stk{border:2px solid var(--blue)}
+.arrow{align-self:center;color:var(--blue);font-size:22px;font-weight:800}
+table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--mut);font-weight:600}td.r,th.r{text-align:right}
+code,.h{font-family:ui-monospace,Menlo,monospace;font-size:11.5px}
+.ok{color:var(--ok);font-weight:700}.bad{color:var(--bad);font-weight:700}
+.bar{height:8px;background:#eceffa;border-radius:6px;overflow:hidden;position:relative}.bar i{display:block;height:100%;background:var(--blue)}
+.bar s{position:absolute;top:-3px;width:2px;height:14px;background:var(--navy)}
+.recon{font-size:15px;font-weight:700;padding:10px 14px;border-radius:10px;margin-bottom:10px}
+.recon.ok{background:#e6f6ee}.recon.bad{background:#fdeaea}
+pre{white-space:pre-wrap;word-break:break-all;background:#0c0e44;color:#cfd6ff;border-radius:10px;padding:12px;font-size:11.5px;max-height:220px;overflow:auto;margin:0}
+footer{color:var(--mut);font-size:12px;text-align:center;padding:18px}
+</style></head><body>
+<header><div><h1>ClipFund <span class="pill">Base · Stocks Maxxing · Track 2.1</span></h1>
+<p>An AI agent that sells crypto-stream clips over x402, books every USDC payment onchain, refills its locked operating reserve first, then buys tokenized stocks with a user-set share of the surplus.</p></div>
+<div style="text-align:right"><div class="pill" id="mode">loading…</div><div class="sub" style="color:#fff;opacity:.8" id="gen"></div></div></header>
+<div class="warn"><b>Testnet demo.</b> Payments use Base Sepolia test USDC (no real money). <b>sCOIN / sNVDA are SIMULATED test stock tokens</b> priced by a disclosed mock exchange; they mirror the shape of Coinbase tokenized stocks (COINc / NVDAc) but carry no claim on any share or issuer.</div>
+<main>
+<div class="grid g4" id="kpis"></div>
+<div class="flow" id="flow"></div>
+<div class="grid g2">
+ <div class="card"><h2>Policy (enforced by ClipFundTreasury)</h2><div id="policy"></div></div>
+ <div class="card"><h2>Holdings</h2><div id="holdings"></div></div>
+</div>
+<div class="card" style="margin-top:14px"><h2>Payments → allocation (each row = one x402 settlement)</h2><div id="payments"></div></div>
+<div class="grid g2" style="margin-top:14px">
+ <div class="card"><h2>Stock purchases</h2><div id="buys"></div></div>
+ <div class="card"><h2>Operating costs (paid from reserve only)</h2><div id="opex"></div></div>
+</div>
+<div class="grid g2" style="margin-top:14px">
+ <div class="card"><h2>Reconciliation report</h2><div id="recon"></div></div>
+ <div class="card"><h2>Agent activity log</h2><pre id="log"></pre></div>
+</div>
+</main>
+<footer id="foot"></footer>
+<script>
+const $=id=>document.getElementById(id), u=v=>(Number(v)/1e6), $u=v=>'$'+u(v).toFixed(2), sh=a=>a.slice(0,6)+'…'+a.slice(-4);
+let EX=null; const tx=h=>EX?`<a class="h" href="${EX}/tx/${h}" target="_blank">${sh(h)}</a>`:`<span class="h" title="${h}">${sh(h)}</span>`;
+const ad=a=>EX?`<a class="h" href="${EX}/address/${a}" target="_blank">${sh(a)}</a>`:`<span class="h" title="${a}">${sh(a)}</span>`;
+const tbl=(cols,rows)=>rows.length?`<table><tr>${cols.map(c=>`<th class="${c[2]||''}">${c[0]}</th>`).join('')}</tr>${rows.map(r=>`<tr>${cols.map(c=>`<td class="${c[2]||''}">${c[1](r)}</td>`).join('')}</tr>`).join('')}</table>`:'<div class="sub">none yet</div>';
+async function load(){
+ const s=await (await fetch('/api/state')).json(); EX=s.explorer;
+ $('mode').textContent=s.mode==='local'?'Local Base Sepolia fork (chain 84532)':'Base Sepolia testnet'; $('gen').textContent='updated '+new Date(s.generatedAt).toLocaleString();
+ const B=s.buckets, T=s.totals, stockVal=s.holdings.reduce((a,h)=>a+Number(h.value),0);
+ $('kpis').innerHTML=[['Revenue (x402)',$u(T.revenue),T.payments+' paid clip jobs'],['Treasury NAV',$u(B.nav),'USDC + stocks at sim price'],['Invested in stocks',$u(T.invested),'from stock budget only'],['Operating costs',$u(T.opex),'from locked reserve']].map(k=>`<div class="card"><h2>${k[0]}</h2><div class="big">${k[1]}</div><div class="sub">${k[2]}</div></div>`).join('');
+ $('flow').innerHTML=`<div class="node"><div class="sub">x402 payments in</div><b>${$u(T.revenue)}</b><div class="sub">${T.payments} settlements</div></div><div class="arrow">→</div>
+ <div class="node lock"><div class="sub">🔒 Operating reserve</div><b>${$u(B.reserveBalance)}</b><div class="sub">target ${$u(s.policy.reserveTarget)} · agent can't invest</div></div><div class="arrow">→</div>
+ <div class="node stk"><div class="sub">Stock budget (${s.policy.investBps/100}% of surplus)</div><b>${$u(B.stockBudget)}</b><div class="sub">unspent</div></div><div class="arrow">→</div>
+ <div class="node stk"><div class="sub">Stock holdings</div><b>${$u(stockVal)}</b><div class="sub">${s.holdings.map(h=>h.symbol).join(' · ')}</div></div>
+ <div class="node"><div class="sub">USDC cash (rest of surplus)</div><b>${$u(B.cashBalance)}</b><div class="sub">owner-withdrawable</div></div>`;
+ $('policy').innerHTML=`<table><tr><td>Reserve target (filled first)</td><td class="r"><b>${$u(s.policy.reserveTarget)}</b></td></tr><tr><td>Share of surplus to stocks (owner-set)</td><td class="r"><b>${s.policy.investBps/100}%</b></td></tr>
+ ${s.holdings.map(h=>`<tr><td>Allowlisted: ${h.symbol} <span class="sub">(mirrors ${h.mirrors})</span></td><td class="r">max weight <b>${h.maxWeightBps/100}%</b> of NAV</td></tr>`).join('')}
+ <tr><td>Treasury contract</td><td class="r">${ad(s.contracts.treasury)}</td></tr><tr><td>Agent key (can book, buy, pay opex)</td><td class="r">${ad(s.contracts.agent)}</td></tr><tr><td>Owner (sets policy)</td><td class="r">${ad(s.contracts.owner)}</td></tr></table>`;
+ $('holdings').innerHTML=s.holdings.map(h=>`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between"><b>${h.symbol}</b><span>${(h.balance/1e8).toFixed(6)} sh · ${$u(h.value)} · <b>${(h.weightBps/100).toFixed(2)}%</b></span></div>
+ <div class="bar"><i style="width:${Math.min(100,h.weightBps/100)}%"></i><s style="left:${h.maxWeightBps/100}%"></s></div><div class="sub">sim price ${$u(h.price)}/sh · cost basis ${$u(h.costBasis)} · cap marker at ${h.maxWeightBps/100}%</div></div>`).join('')+`<div class="sub">USDC in vault ${$u(B.usdcBalance)} (reserve ${$u(B.reserveBalance)} + budget ${$u(B.stockBudget)} + cash ${$u(B.cashBalance)})</div>`;
+ $('payments').innerHTML=tbl([['#',r=>r.i],['Settlement tx (x402)',r=>tx(r.ref)],['Payer',r=>ad(r.payer)],['Amount',r=>$u(r.amount),'r'],['→ Reserve',r=>$u(r.toReserve),'r'],['→ Stocks',r=>$u(r.toStocks),'r'],['→ Cash',r=>$u(r.toCash),'r'],['Booked tx',r=>tx(r.bookedTx)],['Onchain proof',r=>r.settlementVerified?'<span class="ok">✔ verified</span>':'<span class="bad">✘</span>']],s.payments.map((p,i)=>({...p,i:i+1})));
+ $('buys').innerHTML=tbl([['Stock',r=>r.symbol],['USDC in',r=>$u(r.usdcIn),'r'],['Shares',r=>(r.stockOut/1e8).toFixed(6),'r'],['Weight after',r=>(r.weightBpsAfter/100).toFixed(2)+'%','r'],['Tx',r=>tx(r.tx)]],s.buys);
+ $('opex').innerHTML=tbl([['Payee',r=>ad(r.payee)],['Amount',r=>$u(r.amount),'r'],['Memo',r=>r.memo],['Tx',r=>tx(r.tx)]],s.opex);
+ const R=s.reconciliation; $('recon').innerHTML=`<div class="recon ${R.allOk?'ok':'bad'}">${R.allOk?'✔ All '+R.checks.length+' checks reconcile':'✘ Reconciliation mismatch'}</div>`+tbl([['',c=>c.ok?'<span class="ok">✔</span>':'<span class="bad">✘</span>'],['Check',c=>c.name+'<div class="sub">'+c.detail+'</div>'],['Value',c=>c.lhs===c.rhs?c.lhs:c.lhs+' ≠ '+c.rhs,'r']],R.checks);
+ $('log').textContent=(s.activity||[]).join('\n')||'(no activity in this server session)';
+ $('foot').innerHTML=`ClipFund · chain ${s.chainId} · USDC ${ad(s.contracts.usdc)} · sim exchange ${ad(s.contracts.exchange)} · built by @Dipdas2001 for Base Stocks Maxxing`;
+}
+load(); setInterval(load,15000);
+</script></body></html>

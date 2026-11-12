@@ -1,0 +1,65 @@
+{
+ "forge": [
+  "$ forge test",
+  "Ran 13 tests for test/ClipFundTreasury.t.sol:ClipFundTreasuryTest",
+  "[PASS] testFuzz_splitConserves(uint96,uint96,uint16,uint64) (runs: 512, μ: 450379, ~: 464070)",
+  "[PASS] test_badPolicy() (gas: 59864)",
+  "[PASS] test_buyStockWithinCap() (gas: 604518)",
+  "[PASS] test_cannotInvestBeyondBudget() (gas: 300673)",
+  "[PASS] test_duplicateAndPhantomPayments() (gas: 424949)",
+  "[PASS] test_emitsAllocation() (gas: 268847)",
+  "[PASS] test_notAllowlistedReverts() (gas: 367199)",
+  "[PASS] test_onlyAgentAndOwner() (gas: 215356)",
+  "[PASS] test_opexOnlyFromReserveToPayee() (gas: 643232)",
+  "[PASS] test_ownerWithdrawals() (gas: 464772)",
+  "[PASS] test_reserveCannotBeInvested() (gas: 260708)",
+  "[PASS] test_reserveFillsFirst() (gas: 500174)",
+  "[PASS] test_weightCapReverts() (gas: 825144)",
+  "Suite result: ok. 13 passed; 0 failed; 0 skipped; finished in 22.17ms (23.69ms CPU time)",
+  "Ran 1 test suite in 23.02ms (22.17ms CPU time): 13 tests passed, 0 failed, 0 skipped (13 total tests)"
+ ],
+ "t402": [
+  "$ curl -i -X POST localhost:4021/clip -d '{\"start\":5,\"end\":20,\"headline\":\"BASE STOCKS MAXXING\"}'",
+  "HTTP/1.1 402 Payment Required",
+  "payment-required: (base64, decoded below)",
+  "  x402Version: 2",
+  "  scheme:  exact",
+  "  network: eip155:84532   (Base Sepolia)",
+  "  asset:   0x036CbD53842c5426634e7929541eC2318f3dCF7e   (test USDC)",
+  "  amount:  500000   (= 0.50 USDC)",
+  "  payTo:   0xf4e808d0159d13f9b6e75674c9247ae3c078d3d5   (ClipFund treasury contract)",
+  "  resource: ClipFund: cut a 9:16 headline clip from a crypto stream"
+ ],
+ "pay": [
+  "$ npm run buy   # paying client #1: 402 -> sign EIP-3009 USDC authorization -> retry",
+  "HTTP 200  clip /clips/clip-7e104645a4a3.mp4  (15s, mp4 9:16 540x960)",
+  "x402 settlement: success=true  tx 0xc9c47d4c…50eb7b",
+  "payer 0x35Ec95…1133",
+  "agent> booked payment 0.50 USDC from 0x35Ec95…1133 (settle 0xc9c47d4c…50eb7b) -> recordPayment 0x7def611f…ad2278"
+ ],
+ "pay34": [
+  "agent> booked payment 0.50 USDC from 0x35Ec95…1133 (settle 0x9bad92bb…6ba482) -> recordPayment 0xbce05141…66f7f9",
+  "agent> bought sCOIN for 0.15 USDC (stock budget only) -> 0x3faf1a87…a2db73",
+  "agent> bought sNVDA for 0.15 USDC (stock budget only) -> 0x4a9234ae…133610",
+  "agent> booked payment 0.50 USDC from 0x35Ec95…1133 (settle 0xfa86db3f…5c1f9b) -> recordPayment 0xd9cf8b65…242b29",
+  "agent> bought sCOIN for 0.15 USDC (stock budget only) -> 0x11133575…54bdaa",
+  "agent> bought sNVDA for 0.15 USDC (stock budget only) -> 0xd34485f0…45f31e"
+ ],
+ "opex": [
+  "$ agent pays an operating cost (0.20 USDC) -> payOperatingCost(vendor)",
+  "agent> paid operating cost 0.20 USDC \"transcription + render minutes\" from reserve -> 0x005affce…f26b83",
+  "",
+  "$ npm run buy   # paying client #5: 402 -> sign EIP-3009 USDC authorization -> retry",
+  "HTTP 200  clip /clips/clip-330975049275.mp4  (15s, mp4 9:16 540x960)",
+  "x402 settlement: success=true  tx 0x19606572…e0b76e",
+  "agent> booked payment 0.50 USDC from 0x35Ec95…1133 (settle 0x19606572…e0b76e) -> recordPayment 0xe8d0d087…d1ec28",
+  "agent> bought sCOIN for 0.18 USDC (stock budget only) -> 0xc4bd245f…256e7a",
+  "",
+  "$ npm run buy   # paying client #6: 402 -> sign EIP-3009 USDC authorization -> retry",
+  "HTTP 200  clip /clips/clip-9b0787ae40aa.mp4  (15s, mp4 9:16 540x960)",
+  "x402 settlement: success=true  tx 0xefd954a3…c596c3",
+  "agent> booked payment 0.50 USDC from 0x35Ec95…1133 (settle 0xefd954a3…c596c3) -> recordPayment 0xee9b8349…4c5b18",
+  "agent> bought sNVDA for 0.15 USDC (stock budget only) -> 0x66a02bf9…cb2114",
+  "agent> bought sNVDA for 0.15 USDC (stock budget only) -> 0xf602ff72…2ed21f"
+ ]
+}
