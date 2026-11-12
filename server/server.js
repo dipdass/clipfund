@@ -47,6 +47,13 @@ function resilientFacilitator() {
   const selfKey = process.env.FACILITATOR_PK ? "FACILITATOR_PK" : process.env.AGENT_PK ? "AGENT_PK" : null;
   let self = null; let useSelf = process.env.FACILITATOR === "self" && Boolean(selfKey);
   const own = () => (self ||= localFacilitator(selfKey));
+  const fallback = (e, retry) => {
+    if (!selfKey || /VerifyError|SettleError/.test(e?.name || e?.constructor?.name || "") || /\(\d{3}\)/.test(e?.message || "")) throw e; // the facilitator answered: keep its verdict
+    useSelf = true;
+    const m = `x402: public facilitator unreachable (${e.message}); settling in-process, gas from ${selfKey}`;
+    activity.push(m); console.log(m);
+    return retry();
+  };
   if (useSelf) console.log(`x402: settling in-process (FACILITATOR=self, gas from ${selfKey})`);
   return {
     async getSupported() {
@@ -60,8 +67,10 @@ function resilientFacilitator() {
         return own().getSupported();
       }
     },
-    verify: (p, r) => (useSelf ? own().verify(p, r) : withTimeout(remote.verify(p, r), 20000, "facilitator verify")),
-    settle: (p, r) => (useSelf ? own().settle(p, r) : withTimeout(remote.settle(p, r), 90000, "facilitator settle")),
+    // A network error (not a verify/settle *result*) also switches to in-process settlement. Retrying a settle is
+    // safe: EIP-3009 nonces are single-use, so an authorization the public facilitator already used just fails.
+    verify: (p, r) => (useSelf ? own().verify(p, r) : withTimeout(remote.verify(p, r), 20000, "facilitator verify").catch((e) => fallback(e, () => own().verify(p, r)))),
+    settle: (p, r) => (useSelf ? own().settle(p, r) : withTimeout(remote.settle(p, r), 90000, "facilitator settle").catch((e) => fallback(e, () => own().settle(p, r)))),
   };
 }
 
