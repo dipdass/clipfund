@@ -1,6 +1,9 @@
 # ClipFund
 
-**Live dashboard (Base Sepolia testnet):** https://clipfund-szbe.onrender.com
+**Live dashboard (Base Sepolia testnet):** https://dipdass.github.io/clipfund
+
+The public site is a static page on GitHub Pages. Live onchain data, clip payments and the API still come from the agent at https://clipfund-szbe.onrender.com. The first load can take up to a minute if that service has been idle.
+
 
 A clipping agent that pays for itself and saves what's left in tokenized stocks.
 
@@ -49,7 +52,7 @@ The stock tokens are still simulated. sCOIN and sNVDA are test tokens with fixed
 
 ## Try it with your own wallet
 
-Open the **Try it** tab on the [live dashboard](https://clipfund-szbe.onrender.com/#tryit) (on a phone, inside the MetaMask app's browser):
+Open the **Try it** tab on the [live dashboard](https://dipdass.github.io/clipfund/#tryit) (on a phone, inside the MetaMask app's browser):
 
 1. **Connect wallet.** The page asks your wallet to switch to (or add) Base Sepolia, chain 84532, and shows your test ETH, test USDC, sCOIN and sNVDA.
 2. **Buy a clip.** You sign one EIP-3009 `TransferWithAuthorization` for $0.50 test USDC. The x402 facilitator settles it straight into the treasury and the agent books it like every other payment. You pay no gas.
@@ -118,7 +121,10 @@ The agent and dashboard run as one [Render](https://render.com) Web Service, sti
 1. In Render, choose **New → Blueprint** and point it at this GitHub repo.
 2. Render builds from the `server/` folder with `npm ci`, then starts `node server.js`. It listens on `PORT` (Render sets this) at `0.0.0.0`.
 3. When Render asks for env vars, set **AGENT_PK** to the throwaway agent test key in your local `server/.env`. Leave **CHAIN_MODE** as `base-sepolia`. You do not need the deployer, buyer, facilitator, or vendor keys for the web service.
-4. After the first deploy, the public URL is the dashboard. `GET /api/state` is the live onchain report, and `GET /api/health` is a light health check.
+4. After the first deploy, this service is the API and a backup of the dashboard. `GET /api/state` is the live onchain report, and `GET /api/health` is a light health check.
+
+The cleaner public URL is https://dipdass.github.io/clipfund, which is the same dashboard served as a static site from the `gh-pages` branch. It calls this API cross-origin (the server allows `https://dipdass.github.io`). The Render URL keeps working as well.
+
 
 Optional: add `RPC_URL` if the public `https://sepolia.base.org` endpoint rate-limits the service. Do not change `CHAIN_MODE` to mainnet.
 

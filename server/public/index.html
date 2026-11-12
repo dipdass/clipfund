@@ -169,9 +169,11 @@ Payments use Base Sepolia test USDC. <b>sCOIN / sNVDA are SIMULATED test stock t
 <nav class="dots" id="dots" aria-label="Section indicator"></nav>
 <footer id="foot"></footer>
 <script>window.__STATE__=/*__STATE__*/null;</script>
+<script>window.CLIPFUND_API=window.CLIPFUND_API||(/github\.io$/i.test(location.hostname)?"https://clipfund-szbe.onrender.com":"");</script>
 <script>
 (()=>{
 const $=id=>document.getElementById(id), u=v=>(Number(v)/1e6), $u=v=>'$'+u(v).toFixed(2), sh=a=>a.slice(0,6)+'…'+a.slice(-4);
+const API=(window.CLIPFUND_API||'').replace(/\/$/,''), api=p=>API+p;
 let EX=null;
 const tx=h=>EX?`<a class="h" href="${EX}/tx/${h}" target="_blank" rel="noopener">${sh(h)}</a>`:`<span class="h" title="${h}">${sh(h)}</span>`;
 const ad=a=>EX?`<a class="h" href="${EX}/address/${a}" target="_blank" rel="noopener">${sh(a)}</a>`:`<span class="h" title="${a}">${sh(a)}</span>`;
@@ -253,8 +255,8 @@ function status(s){
 }
 setInterval(()=>last&&status(last),10000);
 async function load(){
- try{ const r=await fetch('/api/state',{cache:'no-store'}); if(!r.ok) throw 0; last=await r.json(); lastAt=Date.now(); render(last);
-  try{localStorage.setItem('cf-state',JSON.stringify(last))}catch{} }catch{ if(!last) $('gen').textContent='offline, retrying…'; }
+ try{ const r=await fetch(api('/api/state'),{cache:'no-store'}); if(!r.ok) throw 0; last=await r.json(); lastAt=Date.now(); render(last);
+  try{localStorage.setItem('cf-state',JSON.stringify(last))}catch{} }catch{ if(!last) $('gen').textContent=API?'waking the testnet API… first load can take up to a minute':'offline, retrying…'; }
  schedule();
 }
 function schedule(){ clearTimeout(timer); if(document.hidden) return; timer=setTimeout(load,(!last||!last.live)?4000:30000); }
@@ -269,4 +271,4 @@ if(first&&first.live){ lastAt=Date.now(); schedule(); } else load();
 window.cfReload=()=>{ clearTimeout(timer); load(); };
 })();
 </script>
-<script src="/tryit.js?v=2" defer></script></body></html>
+<script src="tryit.js?v=3" defer></script></body></html>

@@ -1,6 +1,10 @@
 /* ClipFund "Try it": connect your own wallet on Base Sepolia, buy a clip over x402, swap test USDC into a sim stock token.
    Plain EIP-1193, no libraries. Testnet only: the page refuses to act on any chain other than Base Sepolia (84532). */
 (() => {
+const API = (window.CLIPFUND_API || "").replace(/\/$/, "");
+const api = (p) => API + p;
+const media = (url) => (!url || /^https?:/i.test(url) ? url : API + url);
+const dappPath = () => { const p = location.pathname.replace(/\/index\.html$/i, "/"); return p.endsWith("/") ? p : p + "/"; };
 const CHAIN = 84532, CHAIN_HEX = "0x14a34";
 const BASE_SEPOLIA = { chainId: CHAIN_HEX, chainName: "Base Sepolia", nativeCurrency: { name: "Sepolia Ether", symbol: "ETH", decimals: 18 },
   rpcUrls: ["https://sepolia.base.org"], blockExplorerUrls: ["https://sepolia.basescan.org"] };
@@ -63,7 +67,7 @@ function noWallet() {
   const host = location.host;
   $("w-body").innerHTML = `<p class="sub" style="margin:8px 0 12px">No wallet found in this browser. ${isMobile
     ? "On your phone, open this page inside the MetaMask app's browser:" : "Install the MetaMask extension (or open this page on your phone in the MetaMask app):"}</p>
-    <a class="btn full" href="https://metamask.app.link/dapp/${host}${location.pathname}#tryit">Open in MetaMask</a>
+    <a class="btn full" href="https://metamask.app.link/dapp/${host}${dappPath()}#tryit">Open in MetaMask</a>
     ${isMobile ? "" : '<a class="btn sec full mt" href="https://metamask.io/download/" target="_blank" rel="noopener">Get MetaMask</a>'}`;
 }
 async function connect() {
@@ -83,7 +87,7 @@ async function refresh() {
   let id = CHAIN;
   try { id = parseInt(await rq("eth_chainId"), 16); } catch {}
   $("w-net").innerHTML = id === CHAIN ? '<span class="ok">● Base Sepolia</span>' : '<span class="bad">● wrong network</span>';
-  const r = await fetch(`/api/wallet/${acct}`, { cache: "no-store" });
+  const r = await fetch(api(`/api/wallet/${acct}`), { cache: "no-store" });
   if (!r.ok) return;
   W = await r.json();
   const st = W.stocks;
@@ -153,7 +157,7 @@ async function buyClip() {
   const body = JSON.stringify({ start: 12, end: 27, headline: $("c-head").value.trim() || "CLIPFUND DEMO" });
   try {
     if (!(await chainOk())) throw new Error("Please switch your wallet to Base Sepolia");
-    const r1 = await fetch("/clip", { method: "POST", headers: { "content-type": "application/json", accept: "application/json" }, body });
+    const r1 = await fetch(api("/clip"), { method: "POST", headers: { "content-type": "application/json", accept: "application/json" }, body });
     const hdr = r1.headers.get("payment-required");
     if (r1.status !== 402 || !hdr) throw new Error(`Unexpected server reply (${r1.status})`);
     const pr = b64json(hdr), req = pr.accepts.find((a) => a.scheme === "exact" && a.network === `eip155:${CHAIN}`);
@@ -173,13 +177,13 @@ async function buyClip() {
     const signature = await rq("eth_signTypedData_v4", [acct, JSON.stringify(typed)]);
     msg("c-msg", "Signed. Settling the payment onchain and cutting your clip…");
     const payload = { x402Version: pr.x402Version, payload: { authorization: auth, signature }, resource: pr.resource, accepted: req };
-    const r2 = await fetch("/clip", { method: "POST", headers: { "content-type": "application/json", accept: "application/json", "PAYMENT-SIGNATURE": tob64(payload) }, body });
+    const r2 = await fetch(api("/clip"), { method: "POST", headers: { "content-type": "application/json", accept: "application/json", "PAYMENT-SIGNATURE": tob64(payload) }, body });
     const res = r2.headers.get("payment-response"), out = await r2.json().catch(() => ({}));
     const st = res ? b64json(res) : null;
     if (!r2.ok || !st?.success) throw new Error(out?.error || st?.errorReason || `Payment was not accepted (${r2.status})`);
     const c = out.clip || {};
     msg("c-msg", `Paid ${fmt(req.amount, 6, 2)} test USDC into the treasury. ${txa(st.transaction, "Settlement tx")}
-      <br>Clip “${esc(c.headline || "")}” (${c.seconds || 15}s, 9:16) ${c.url ? `· <a href="${c.url}" target="_blank" rel="noopener">watch ↗</a>` : "is booked."}
+      <br>Clip “${esc(c.headline || "")}” (${c.seconds || 15}s, 9:16) ${c.url ? `· <a href="${media(c.url)}" target="_blank" rel="noopener">watch ↗</a>` : "is booked."}
       <br><span class="sub">The agent books it onchain in a few seconds; it will show up under Payments.</span>`, "ok");
     setTimeout(() => window.cfReload?.(), 6000); setTimeout(() => window.cfReload?.(), 15000);
   } catch (e) { msg("c-msg", why(e), "bad"); }

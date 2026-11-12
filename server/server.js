@@ -91,6 +91,29 @@ const resourceServer = new x402ResourceServer(facilitator)
   .onSettleFailure(async (ctx) => { const m = `x402 settle failed: ${ctx.error?.message || "unknown"}`; activity.push(m); console.log(m); });
 
 const app = express();
+
+// The GitHub Pages dashboard (https://dipdass.github.io/clipfund) calls this API cross-origin.
+// Same-origin visitors on the Render URL are unaffected. Extra origins: FRONTEND_ORIGINS=comma,separated.
+const FRONTEND_ORIGINS = new Set([
+  "https://dipdass.github.io",
+  ...String(process.env.FRONTEND_ORIGINS || "").split(",").map((s) => s.trim()).filter(Boolean),
+]);
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && FRONTEND_ORIGINS.has(origin)) {
+    res.set({
+      "Access-Control-Allow-Origin": origin,
+      Vary: "Origin",
+      "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Accept, PAYMENT-SIGNATURE, Payment-Signature, X-PAYMENT",
+      "Access-Control-Expose-Headers": "PAYMENT-REQUIRED, Payment-Required, payment-required, PAYMENT-RESPONSE, Payment-Response, payment-response",
+      "Access-Control-Max-Age": "86400",
+    });
+  }
+  if (req.method === "OPTIONS") return res.status(204).end();
+  next();
+});
+
 app.use(express.json());
 app.use("/clips", express.static(CLIPS_DIR));
 
