@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0000FF">
+<title>ClipFund — agent that earns its stock treasury</title>
+<meta name="description" content="An AI agent sells crypto-stream clips over x402, fills a locked operating reserve first, then buys tokenized stocks. Live on Base Sepolia testnet.">
+<style>
+:root{--blue:#0000FF;--navy:#0C0E44;--ink:#0b0d2a;--mut:#5b6185;--ok:#0a8f4e;--bad:#c62828;--line:#e3e6f3;--bg:#f5f6fb;--pad:32px}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;font:14px/1.45 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);background:var(--bg);overflow-x:hidden}
+a{color:var(--blue)}
+header{background:var(--blue);color:#fff;padding:22px var(--pad);display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+header h1{margin:0;font-size:26px;letter-spacing:-.5px}header p{margin:4px 0 0;opacity:.85;max-width:780px}
+.pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:rgba(255,255,255,.18);vertical-align:middle}
+.status{text-align:right}.status .sub{color:#fff;opacity:.8}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#7CFFB2;margin-right:6px;vertical-align:1px}
+.dot.sync{background:#ffd76a;animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+.warn{background:#fff4d6;color:#6b4e00;border-bottom:1px solid #f1d58a;padding:9px var(--pad);font-size:13px}
+.warn summary{cursor:pointer;list-style:none}.warn summary::-webkit-details-marker{display:none}
+main{padding:22px var(--pad);max-width:1280px;margin:auto}
+.grid{display:grid;gap:14px}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}.g2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;min-width:0}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);margin:0 0 10px}
+.mt{margin-top:14px}
+.big{font-size:26px;font-weight:700;letter-spacing:-.5px}.sub{color:var(--mut);font-size:12px}
+.flow{display:flex;align-items:stretch;gap:10px;margin:14px 0}
+.node{flex:1;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center;min-width:0}
+.node b{display:block;font-size:20px}.node.lock{border:2px solid var(--navy)}.node.stk{border:2px solid var(--blue)}
+.arrow{align-self:center;color:var(--blue);font-size:22px;font-weight:800}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--mut);font-weight:600}td.r,th.r{text-align:right}td.wrap{white-space:normal}
+code,.h{font-family:ui-monospace,Menlo,monospace;font-size:11.5px}
+.ok{color:var(--ok);font-weight:700}.bad{color:var(--bad);font-weight:700}
+.bar{height:8px;background:#eceffa;border-radius:6px;overflow:hidden;position:relative}.bar i{display:block;height:100%;background:var(--blue)}
+.bar s{position:absolute;top:-3px;width:2px;height:14px;background:var(--navy)}
+.recon{font-size:15px;font-weight:700;padding:10px 14px;border-radius:10px;margin-bottom:10px}
+.recon.ok{background:#e6f6ee}.recon.bad{background:#fdeaea}
+pre{white-space:pre-wrap;word-break:break-all;background:#0c0e44;color:#cfd6ff;border-radius:10px;padding:12px;font-size:11.5px;max-height:260px;overflow:auto;margin:0}
+footer{color:var(--mut);font-size:12px;text-align:center;padding:18px var(--pad) 28px;overflow-wrap:anywhere}
+.rows{display:none}
+.row{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;background:#fff}
+.row .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.row .amt{font-size:18px;font-weight:700;letter-spacing:-.3px}
+.split{display:flex;gap:6px;margin:10px 0 4px;font-size:12px}
+.split span{flex:1;background:#f3f4fb;border-radius:8px;padding:6px 8px;min-width:0}.split span b{display:block;font-size:13px}
+.links{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.links a{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border-radius:10px;background:#eef0ff;text-decoration:none;font-size:12.5px;font-weight:600}
+.sk{background:linear-gradient(90deg,#eceef7 25%,#f6f7fc 50%,#eceef7 75%);background-size:200% 100%;animation:sh 1.2s linear infinite;border-radius:8px;height:14px;margin:6px 0}
+.sk.lg{height:28px;width:60%}@keyframes sh{to{background-position:-200% 0}}
+/* Try it */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:46px;padding:0 18px;border-radius:12px;border:0;background:var(--blue);color:#fff;font-family:inherit;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none}
+.btn.sec{background:#eef0ff;color:var(--blue)}.btn.sm{min-height:40px;padding:0 12px;font-size:13px}.btn:disabled{opacity:.45;cursor:default}
+.btn.full{width:100%}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#fff4d6;color:#6b4e00;vertical-align:middle}
+.wl{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.bals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+.bals div{background:#f3f4fb;border-radius:10px;padding:9px 11px;min-width:0}.bals b{display:block;font-size:16px;overflow-wrap:anywhere}
+.seg{display:flex;background:#eef0ff;border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;min-height:42px;border:0;border-radius:10px;background:none;font-family:inherit;font-weight:600;font-size:14px;color:var(--mut);cursor:pointer}
+.seg button[aria-pressed=true]{background:#fff;color:var(--blue);box-shadow:0 1px 3px rgba(0,0,40,.12)}
+.fld{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:0 12px;background:#fff;margin-top:10px}
+.fld input{flex:1;min-width:0;border:0;outline:0;font-family:inherit;font-weight:600;font-size:20px;padding:12px 0;background:none;color:var(--ink)}
+.fld span{color:var(--mut);font-weight:600}
+.chips{display:flex;gap:6px;margin-top:8px}.chips button{flex:1;min-height:38px;border:1px solid var(--line);background:#fff;border-radius:10px;font-family:inherit;font-weight:600;font-size:13px;color:var(--ink);cursor:pointer}
+.quote{margin:10px 0;font-size:13px;color:var(--mut)}.quote b{color:var(--ink)}
+.steps{display:flex;gap:8px;margin-top:4px}.steps .btn{flex:1}
+.msg{margin-top:10px;font-size:13px;border-radius:10px;padding:10px 12px;background:#f3f4fb;overflow-wrap:anywhere}
+.msg.ok{background:#e6f6ee;color:#0b5a33;font-weight:500}.msg.bad{background:#fdeaea;color:#8a1c1c;font-weight:500}
+.msg a{font-weight:600}
+.help li{margin:4px 0}.help{padding-left:18px;margin:6px 0 0}
+#tryit-head input[type=text]{width:100%}
+.tabs,.dots,.hint{display:none}
+.panel+.panel{margin-top:14px}
+@media (min-width:821px){.track{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:14px}.track>.panel{grid-column:1/-1}.track>#p-buys{grid-column:1}.track>#p-holdings{grid-column:2}.track>#p-buys,.track>#p-holdings{display:flex;flex-direction:column}.track>#p-buys .card,.track>#p-holdings .card{flex:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important}}
+@media (max-width:1000px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.flow{flex-wrap:wrap}.flow .arrow{display:none}.node{flex:1 1 30%}}
+@media (max-width:820px){
+ :root{--pad:16px}
+ header{padding:16px var(--pad) 14px;gap:10px}header h1{font-size:22px}header p{font-size:13px}
+ header .pill.track{display:block;width:max-content;margin-top:6px}
+ .status{text-align:left}
+ .warn{padding:8px var(--pad);font-size:12.5px}
+ main{padding:0 0 calc(64px + env(safe-area-inset-bottom))}
+ .tabs{display:flex;position:sticky;top:0;z-index:5;background:rgba(245,246,251,.96);backdrop-filter:saturate(1.4) blur(8px);-webkit-backdrop-filter:blur(8px);overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line);padding:0 6px}
+ .tabs::-webkit-scrollbar{display:none}
+ .tabs button{flex:0 0 auto;min-height:48px;padding:0 14px;border:0;background:none;font-weight:600;font-size:14px;font-family:inherit;color:var(--mut);position:relative;cursor:pointer}
+ .tabs button[aria-selected=true]{color:var(--blue)}
+ .tabs button[aria-selected=true]::after{content:"";position:absolute;left:12px;right:12px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:var(--blue)}
+ .track{display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:none;align-items:flex-start}
+ .track::-webkit-scrollbar{display:none}
+ .panel{flex:0 0 100%;width:100%;scroll-snap-align:start;scroll-snap-stop:always;padding:14px var(--pad) 8px;min-width:0}
+ .panel+.panel{margin-top:0}
+ .grid.g2{grid-template-columns:minmax(0,1fr)}
+ .g4{gap:10px}.g4 .card{padding:12px 14px}.big{font-size:21px}
+ .flow{gap:8px;margin:10px 0}.node{flex:1 1 calc(50% - 8px);padding:10px}.node b{font-size:17px}.node:last-child{flex-basis:100%}
+ .card{padding:14px}
+ .rows{display:block}.desk{display:none}
+ .hint{display:block;text-align:center;color:var(--mut);font-size:12px;padding:8px 0 0}
+ .dots{display:flex;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom));z-index:6;gap:2px;background:rgba(12,14,68,.86);border-radius:999px;padding:0 8px}
+ .dots button{width:30px;height:44px;border:0;background:none;padding:0;cursor:pointer;display:grid;place-items:center}
+ .dots button i{display:block;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.45);transition:width .2s,background .2s}
+ .dots button[aria-current=true] i{width:18px;border-radius:4px;background:#fff}
+ td,th{padding:9px 6px}
+}
+</style></head><body>
+<header><div><h1>ClipFund <span class="pill track">Base · Stocks Maxxing · Track 2.1</span></h1>
+<p>An AI agent that sells crypto-stream clips over x402, books every USDC payment onchain, refills its locked operating reserve first, then buys tokenized stocks with a user-set share of the surplus.</p></div>
+<div class="status"><div class="pill" id="mode"><span class="dot sync"></span>connecting…</div><div class="sub" id="gen"></div></div></header>
+<details class="warn" id="warn" open><summary><b>Testnet demo.</b> No real money; stock tokens are simulated. <u id="more"></u></summary>
+Payments use Base Sepolia test USDC. <b>sCOIN / sNVDA are SIMULATED test stock tokens</b> priced by a disclosed mock exchange; they mirror the shape of Coinbase tokenized stocks (COINc / NVDAc) but carry no claim on any share or issuer.</details>
+<main>
+<nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav>
+<div class="hint" id="hint">Swipe left or right to switch sections</div>
+<div class="track" id="track">
+ <section class="panel" id="p-overview" data-title="Overview" role="tabpanel">
+  <div class="grid g4" id="kpis"></div>
+  <div class="flow" id="flow"></div>
+  <div class="card"><h2>Policy (enforced by ClipFundTreasury)</h2><div id="policy"></div></div>
+ </section>
+ <section class="panel" id="p-tryit" data-title="Try it" role="tabpanel">
+  <div class="card" id="w-card"><div class="wl"><h2 style="margin:0">Your wallet <span class="tag">TESTNET</span></h2><span class="sub" id="w-net"></span></div>
+   <div id="w-body"><p class="sub" style="margin:8px 0 12px">Connect your own wallet and try ClipFund yourself on Base Sepolia. Everything here uses test USDC and simulated stock tokens, so nothing has real value.</p>
+   <button class="btn full" id="w-connect">Connect wallet</button></div>
+  </div>
+  <div class="card mt"><h2>1 · Buy a clip <span style="text-transform:none;letter-spacing:0">(pay with x402, no gas)</span></h2>
+   <p class="sub" style="margin:0 0 6px">You sign one USDC authorization; the x402 facilitator settles it straight into the treasury, and the agent books it like every other payment.</p>
+   <div class="fld"><input type="text" id="c-head" maxlength="40" value="BTC JUST BROKE OUT" aria-label="Clip headline" style="font-size:15px"><span>headline</span></div>
+   <button class="btn full mt" id="c-buy" disabled>Buy a clip for $0.50 test USDC</button>
+   <div id="c-msg"></div>
+  </div>
+  <div class="card mt"><h2>2 · Swap test USDC → stock token</h2>
+   <div class="seg" id="s-pick" role="group" aria-label="Stock token"><button aria-pressed="true">sCOIN</button><button aria-pressed="false">sNVDA</button></div>
+   <div class="fld"><input type="number" inputmode="decimal" id="s-amt" min="0.1" step="0.1" value="1" aria-label="USDC amount"><span>USDC</span></div>
+   <div class="chips" id="s-chips"><button data-v="0.5">$0.50</button><button data-v="1">$1</button><button data-v="2">$2</button><button data-v="max">Max</button></div>
+   <div class="quote" id="s-quote">Connect a wallet to get a quote.</div>
+   <div class="steps"><button class="btn sec" id="s-approve" disabled>1. Approve</button><button class="btn" id="s-swap" disabled>2. Swap</button></div>
+   <div id="s-msg"></div>
+   <div class="sub" style="margin-top:10px">The demo exchange sells at a fixed, disclosed sim price and is buy-only: there is no sell-back for these test tokens. Swaps need a little Base Sepolia ETH for gas.</div>
+  </div>
+  <div class="card mt"><h2>Need test funds?</h2>
+   <ol class="help">
+    <li><b>Test USDC:</b> open <a href="https://faucet.circle.com" target="_blank" rel="noopener">faucet.circle.com</a>, pick <b>USDC</b> + <b>Base Sepolia</b>, paste your address. You get 10 test USDC.</li>
+    <li><b>Test ETH for gas</b> (only for the swap): any Base Sepolia faucet, e.g. <a href="https://portal.cdp.coinbase.com/products/faucet" target="_blank" rel="noopener">Coinbase CDP faucet</a> or <a href="https://www.alchemy.com/faucets/base-sepolia" target="_blank" rel="noopener">Alchemy</a>. A tiny amount is plenty.</li>
+    <li>Buying a clip costs no gas at all, only the $0.50 test USDC.</li>
+   </ol>
+   <p class="sub" style="margin:8px 0 0">Never use a wallet that holds real funds you care about for experiments, and never share your seed phrase. This page only asks for signatures you can read in your wallet.</p>
+  </div>
+ </section>
+ <section class="panel" id="p-payments" data-title="Payments" role="tabpanel">
+  <div class="card"><h2>Payments → allocation <span style="text-transform:none;letter-spacing:0">(each = one x402 settlement)</span></h2><div id="payments"></div></div>
+  <div class="card mt"><h2>Operating costs (paid from reserve only)</h2><div id="opex"></div></div>
+ </section>
+ <section class="panel" id="p-buys" data-title="Stock buys" role="tabpanel">
+  <div class="card"><h2>Stock purchases</h2><div id="buys"></div></div>
+ </section>
+ <section class="panel" id="p-holdings" data-title="Holdings" role="tabpanel">
+  <div class="card"><h2>Holdings</h2><div id="holdings"></div></div>
+ </section>
+ <section class="panel" id="p-checks" data-title="Checks" role="tabpanel">
+  <div class="grid g2">
+   <div class="card"><h2>Reconciliation report</h2><div id="recon"></div></div>
+   <div class="card"><h2>Agent activity log</h2><pre id="log"></pre></div>
+  </div>
+ </section>
+</div>
+</main>
+<nav class="dots" id="dots" aria-label="Section indicator"></nav>
+<footer id="foot"></footer>
+<script>window.__STATE__=/*__STATE__*/null;</script>
+<script>window.CLIPFUND_API=window.CLIPFUND_API||(/github\.io$/i.test(location.hostname)?"https://clipfund-szbe.onrender.com":"");</script>
+<script>
+(()=>{
+const $=id=>document.getElementById(id), u=v=>(Number(v)/1e6), $u=v=>'$'+u(v).toFixed(2), sh=a=>a.slice(0,6)+'…'+a.slice(-4);
+const API=(window.CLIPFUND_API||'').replace(/\/$/,''), api=p=>API+p;
+let EX=null;
+const tx=h=>EX?`<a class="h" href="${EX}/tx/${h}" target="_blank" rel="noopener">${sh(h)}</a>`:`<span class="h" title="${h}">${sh(h)}</span>`;
+const ad=a=>EX?`<a class="h" href="${EX}/address/${a}" target="_blank" rel="noopener">${sh(a)}</a>`:`<span class="h" title="${a}">${sh(a)}</span>`;
+const btn=(label,h)=>EX?`<a href="${EX}/tx/${h}" target="_blank" rel="noopener">${label} ↗</a>`:'';
+const tbl=(cols,rows)=>rows.length?`<div class="tw"><table><tr>${cols.map(c=>`<th class="${c[2]||''}">${c[0]}</th>`).join('')}</tr>${rows.map(r=>`<tr>${cols.map(c=>`<td class="${c[2]||''}">${c[1](r)}</td>`).join('')}</tr>`).join('')}</table></div>`:'<div class="sub">none yet</div>';
+const ok=v=>v?'<span class="ok">✔</span>':'<span class="bad">✘</span>';
+
+/* sections: sticky tabs + dots on phones, native scroll-snap does the swipe */
+const track=$('track'), panels=[...track.children], mq=matchMedia('(max-width:820px)');
+let cur=0;
+$('tabs').innerHTML=panels.map((p,i)=>`<button role="tab" id="t-${i}" aria-controls="${p.id}" aria-selected="${i===0}">${p.dataset.title}</button>`).join('');
+$('dots').innerHTML=panels.map((p,i)=>`<button aria-label="${p.dataset.title}" aria-current="${i===0}"><i></i></button>`).join('');
+const tabs=[...$('tabs').children], dots=[...$('dots').children];
+function fit(){ track.style.height=mq.matches?panels[cur].offsetHeight+'px':''; }
+function mark(i){
+ cur=i; tabs.forEach((t,j)=>t.setAttribute('aria-selected',j===i)); dots.forEach((d,j)=>d.setAttribute('aria-current',j===i));
+ const tb=$('tabs'), t=tabs[i]; tb.scrollTo({left:t.offsetLeft-(tb.clientWidth-t.offsetWidth)/2,behavior:'smooth'});
+ fit(); if(i>0) $('hint').style.display='none';
+ history.replaceState(null,'','#'+panels[i].id.slice(2));
+}
+function go(i,smooth=true){
+ i=Math.max(0,Math.min(panels.length-1,i));
+ if(!mq.matches){ panels[i].scrollIntoView({behavior:smooth?'smooth':'auto'}); return; }
+ track.scrollTo({left:i*track.clientWidth,behavior:smooth?'smooth':'auto'});
+ const top=$('tabs').offsetTop; if(window.scrollY>top) window.scrollTo({top,behavior:smooth?'smooth':'auto'});
+ mark(i);
+}
+tabs.forEach((t,i)=>t.onclick=()=>go(i)); dots.forEach((d,i)=>d.onclick=()=>go(i));
+let raf=0; track.addEventListener('scroll',()=>{ if(raf) return; raf=requestAnimationFrame(()=>{raf=0; if(!mq.matches) return; const i=Math.round(track.scrollLeft/track.clientWidth); if(i!==cur) mark(i);}); },{passive:true});
+document.addEventListener('keydown',e=>{ if(!mq.matches) return; if(e.key==='ArrowRight') go(cur+1); if(e.key==='ArrowLeft') go(cur-1); });
+const ro=new ResizeObserver(()=>fit()); panels.forEach(p=>ro.observe(p));
+mq.addEventListener('change',()=>{ fit(); if(mq.matches) go(cur,false); });
+if(mq.matches){ $('warn').open=false; $('more').textContent='More'; }
+
+/* rendering: a block is rewritten only when its own slice of data changed */
+const memo={};
+function put(id,data,fn){ const k=JSON.stringify(data); if(memo[id]===k) return; memo[id]=k; $(id).innerHTML=fn(); }
+function skeleton(){
+ const sk='<div class="sk lg"></div><div class="sk" style="width:80%"></div>';
+ $('kpis').innerHTML=Array(4).fill(`<div class="card"><div class="sk" style="width:50%"></div>${sk}</div>`).join('');
+ for(const id of ['policy','payments','buys','holdings','recon','opex']) $(id).innerHTML=sk+'<div class="sk"></div><div class="sk" style="width:65%"></div>';
+}
+function render(s){
+ EX=s.explorer;
+ const B=s.buckets,T=s.totals,P=s.policy,stockVal=s.holdings.reduce((a,h)=>a+Number(h.value),0);
+ put('kpis',[T,B.nav],()=>[['Revenue (x402)',$u(T.revenue),T.payments+' paid clip jobs'],['Treasury NAV',$u(B.nav),'USDC + stocks at sim price'],['Invested in stocks',$u(T.invested),'from stock budget only'],['Operating costs',$u(T.opex),'from locked reserve']].map(k=>`<div class="card"><h2>${k[0]}</h2><div class="big">${k[1]}</div><div class="sub">${k[2]}</div></div>`).join(''));
+ put('flow',[T,B,P,stockVal,s.holdings.map(h=>h.symbol)],()=>`<div class="node"><div class="sub">x402 payments in</div><b>${$u(T.revenue)}</b><div class="sub">${T.payments} settlements</div></div><div class="arrow">→</div>
+ <div class="node lock"><div class="sub">🔒 Operating reserve</div><b>${$u(B.reserveBalance)}</b><div class="sub">target ${$u(P.reserveTarget)} · agent can't invest</div></div><div class="arrow">→</div>
+ <div class="node stk"><div class="sub">Stock budget (${P.investBps/100}% of surplus)</div><b>${$u(B.stockBudget)}</b><div class="sub">unspent</div></div><div class="arrow">→</div>
+ <div class="node stk"><div class="sub">Stock holdings</div><b>${$u(stockVal)}</b><div class="sub">${s.holdings.map(h=>h.symbol).join(' · ')}</div></div>
+ <div class="node"><div class="sub">USDC cash (rest of surplus)</div><b>${$u(B.cashBalance)}</b><div class="sub">owner-withdrawable</div></div>`);
+ put('policy',[P,s.holdings.map(h=>[h.symbol,h.mirrors,h.maxWeightBps]),s.contracts,EX],()=>`<div class="tw"><table><tr><td class="wrap">Reserve target (filled first)</td><td class="r"><b>${$u(P.reserveTarget)}</b></td></tr><tr><td class="wrap">Share of surplus to stocks (owner-set)</td><td class="r"><b>${P.investBps/100}%</b></td></tr>
+ ${s.holdings.map(h=>`<tr><td class="wrap">Allowlisted: ${h.symbol} <span class="sub">(mirrors ${h.mirrors})</span></td><td class="r">max weight <b>${h.maxWeightBps/100}%</b> of NAV</td></tr>`).join('')}
+ <tr><td class="wrap">Treasury contract</td><td class="r">${ad(s.contracts.treasury)}</td></tr><tr><td class="wrap">Agent key (can book, buy, pay opex)</td><td class="r">${ad(s.contracts.agent)}</td></tr><tr><td class="wrap">Owner (sets policy)</td><td class="r">${ad(s.contracts.owner)}</td></tr></table></div>`);
+ put('holdings',[s.holdings,B],()=>s.holdings.map(h=>`<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>${h.symbol}</b><span>${(h.balance/1e8).toFixed(6)} sh · ${$u(h.value)} · <b>${(h.weightBps/100).toFixed(2)}%</b></span></div>
+ <div class="bar"><i style="width:${Math.min(100,h.weightBps/100)}%"></i><s style="left:${h.maxWeightBps/100}%"></s></div><div class="sub">sim price ${$u(h.price)}/sh · cost basis ${$u(h.costBasis)} · cap marker at ${h.maxWeightBps/100}%</div></div>`).join('')+`<div class="sub">USDC in vault ${$u(B.usdcBalance)} (reserve ${$u(B.reserveBalance)} + budget ${$u(B.stockBudget)} + cash ${$u(B.cashBalance)})</div>`);
+ const pays=s.payments.map((p,i)=>({...p,i:i+1}));
+ put('payments',[pays,EX],()=>pays.length?`<div class="desk">${tbl([['#',r=>r.i],['Settlement tx (x402)',r=>tx(r.ref)],['Payer',r=>ad(r.payer)],['Amount',r=>$u(r.amount),'r'],['→ Reserve',r=>$u(r.toReserve),'r'],['→ Stocks',r=>$u(r.toStocks),'r'],['→ Cash',r=>$u(r.toCash),'r'],['Booked tx',r=>tx(r.bookedTx)],['Onchain proof',r=>r.settlementVerified?'<span class="ok">✔ verified</span>':'<span class="bad">✘</span>']],pays)}</div>
+ <div class="rows">${pays.slice().reverse().map(r=>`<div class="row"><div class="top"><span class="sub">#${r.i} · from ${sh(r.payer)}</span>${r.settlementVerified?'<span class="ok">✔ verified</span>':'<span class="bad">✘ unproven</span>'}</div>
+ <div class="amt">${$u(r.amount)}</div><div class="split"><span>Reserve<b>${$u(r.toReserve)}</b></span><span>Stocks<b>${$u(r.toStocks)}</b></span><span>Cash<b>${$u(r.toCash)}</b></span></div>
+ <div class="links">${btn('Settlement tx',r.ref)}${btn('Booked tx',r.bookedTx)}</div></div>`).join('')}</div>`:'<div class="sub">none yet</div>');
+ const buys=s.buys;
+ put('buys',[buys,EX],()=>buys.length?`<div class="desk">${tbl([['Stock',r=>r.symbol],['USDC in',r=>$u(r.usdcIn),'r'],['Shares',r=>(r.stockOut/1e8).toFixed(6),'r'],['Weight after',r=>(r.weightBpsAfter/100).toFixed(2)+'%','r'],['Tx',r=>tx(r.tx)]],buys)}</div>
+ <div class="rows">${buys.slice().reverse().map(r=>`<div class="row"><div class="top"><b>${r.symbol}</b><span class="amt">${$u(r.usdcIn)}</span></div>
+ <div class="sub">${(r.stockOut/1e8).toFixed(6)} shares · weight after ${(r.weightBpsAfter/100).toFixed(2)}%</div><div class="links">${btn('View tx',r.tx)}</div></div>`).join('')}</div>`:'<div class="sub">none yet</div>');
+ put('opex',[s.opex,EX],()=>tbl([['Payee',r=>ad(r.payee)],['Amount',r=>$u(r.amount),'r'],['Memo',r=>r.memo],['Tx',r=>tx(r.tx)]],s.opex));
+ const R=s.reconciliation;
+ put('recon',R,()=>`<div class="recon ${R.allOk?'ok':'bad'}">${R.allOk?'✔ All '+R.checks.length+' checks reconcile':'✘ Reconciliation mismatch'}</div><div class="tw"><table>${R.checks.map(c=>`<tr><td>${ok(c.ok)}</td><td class="wrap">${c.name}<div class="sub">${c.detail}</div></td><td class="r">${c.lhs===c.rhs?c.lhs:c.lhs+' ≠ '+c.rhs}</td></tr>`).join('')}</table></div>`);
+ const lg=(s.activity||[]).join('\n')||'(no activity in this server session)'; if($('log').textContent!==lg) $('log').textContent=lg;
+ put('foot',[s.chainId,s.contracts,EX],()=>`ClipFund · chain ${s.chainId} · USDC ${ad(s.contracts.usdc)} · sim exchange ${ad(s.contracts.exchange)} · built by @Dipdas2001 for Base Stocks Maxxing`);
+ status(s); fit();
+}
+let last=null, lastAt=0, timer=0;
+const ago=ms=>{ const x=Math.max(0,Math.round(ms/1000)); return x<5?'just now':x<60?x+'s ago':Math.round(x/60)+' min ago'; };
+function status(s){
+ const syncing=!s.live;
+ $('mode').innerHTML=`<span class="dot${syncing?' sync':''}"></span>${s.mode==='local'?'Local Base Sepolia fork':'Base Sepolia testnet'}`;
+ $('gen').textContent=(syncing?'last snapshot · syncing with chain… · ':'live · ')+'updated '+ago(Date.now()-new Date(s.generatedAt).getTime());
+}
+setInterval(()=>last&&status(last),10000);
+async function load(){
+ try{ const r=await fetch(api('/api/state'),{cache:'no-store'}); if(!r.ok) throw 0; last=await r.json(); lastAt=Date.now(); render(last);
+  try{localStorage.setItem('cf-state',JSON.stringify(last))}catch{} }catch{ if(!last) $('gen').textContent=API?'waking the testnet API… first load can take up to a minute':'offline, retrying…'; }
+ schedule();
+}
+function schedule(){ clearTimeout(timer); if(document.hidden) return; timer=setTimeout(load,(!last||!last.live)?4000:30000); }
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) clearTimeout(timer); else if(Date.now()-lastAt>25000) load(); else schedule(); });
+
+/* first paint: state inlined by the server → copy from the last visit → skeleton */
+let first=window.__STATE__;
+if(!first){ try{ const c=JSON.parse(localStorage.getItem('cf-state')); if(c) first={...c,live:false}; }catch{} }
+if(first){ last=first; render(first); } else skeleton();
+const hi=panels.findIndex(p=>p.id==='p-'+location.hash.slice(1)); if(hi>0) requestAnimationFrame(()=>go(hi,false));
+if(first&&first.live){ lastAt=Date.now(); schedule(); } else load();
+window.cfReload=()=>{ clearTimeout(timer); load(); };
+})();
+</script>
+<script src="tryit.js?v=3" defer></script></body></html>
