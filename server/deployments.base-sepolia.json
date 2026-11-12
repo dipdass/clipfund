@@ -1,0 +1,40 @@
+{
+  "mode": "base-sepolia",
+  "chainId": 84532,
+  "network": "eip155:84532",
+  "usdc": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+  "startBlock": 57851142,
+  "owner": "0xA1A1F65b0D7c74E5e9B19864Baf41613bb90980D",
+  "agent": "0x88898D3605745c61f505eC9930c99c194a3e8291",
+  "facilitator": "0x35A0bc853FB07BA60746cD7761650C1B0ABD24a3",
+  "buyer": "0x35Ec9540870e9E311d02E5d943eA321275b41133",
+  "opexVendor": "0x2F546748B22aD059C4eC4d9fA844ba3727971E25",
+  "exchange": "0x18a776641516ecb570d6f9656661984254761cc8",
+  "treasury": "0xf4e808d0159d13f9b6e75674c9247ae3c078d3d5",
+  "stocks": [
+    {
+      "symbol": "sCOIN",
+      "mirrors": "COINc",
+      "address": "0xea190a2661b2d12ba29a552287c5825db5e5a1c5"
+    },
+    {
+      "symbol": "sNVDA",
+      "mirrors": "NVDAc",
+      "address": "0xf469a6092a8543169bcf7c75cd9a433b86bcbdb8"
+    }
+  ],
+  "policy": {
+    "reserveTargetUSDC": 1,
+    "investBps": 6000,
+    "maxWeightBps": {
+      "sCOIN": 3500,
+      "sNVDA": 3500
+    }
+  },
+  "deployTxs": {
+    "exchange": "0xf62b1bc5a75dc9232bfb142c353d492a10e0233ae373c87e6cf27a4533cdcd8a",
+    "sCOIN": "0x818bb2d349164a2564272713422bc3e2b38874e4ea198483937f45b93b28cc92",
+    "sNVDA": "0x23f251b0e6ec27a0c00c190866ff68f37d3086b20c666e399cfa64f80562726a",
+    "treasury": "0xe5178376f9ace251956928bc9b9a2dde4ef6a8cc3e62602692c7d1c14a7ec5b9"
+  }
+}

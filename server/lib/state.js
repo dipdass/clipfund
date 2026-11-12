@@ -1,21 +1,45 @@
 // Builds the public dashboard state from onchain events + balances and reconciles them.
-import { publicClient, deployments, TREASURY_ABI, EXCHANGE_ABI, ERC20_ABI, USDC, MODE, EXPLORER } from "./chain.js";
+import { publicClient, deployments, TREASURY_ABI, EXCHANGE_ABI, ERC20_ABI, USDC, MODE, EXPLORER, ROOT } from "./chain.js";
 import { verifySettlement } from "./agent.js";
 import { parseEventLogs } from "viem";
 import fs from "node:fs";
 import path from "node:path";
-import { ROOT } from "./chain.js";
+import os from "node:os";
 
 // Public Base Sepolia RPC caps eth_getLogs at a 200-block range, so we scan in windows
-// and cache the raw treasury logs on disk (logs-cache.<mode>.json) so restarts stay cheap.
+// and cache the raw treasury logs on disk so restarts stay cheap.
 const STEP = BigInt(process.env.LOGS_BLOCK_RANGE || 199);
-const CACHE = path.join(ROOT, `logs-cache.${MODE}.json`);
-let cache = null;
-async function treasuryLogs(D) {
-  if (!cache) {
-    try { cache = JSON.parse(fs.readFileSync(CACHE, "utf8")); } catch {}
-    if (!cache || cache.treasury !== D.treasury) cache = { treasury: D.treasury, next: String(D.startBlock), logs: [] };
+const SEED = path.join(ROOT, "data", `logs-cache.${MODE}.json`);
+
+function cacheDir() {
+  if (process.env.CACHE_DIR) {
+    fs.mkdirSync(process.env.CACHE_DIR, { recursive: true });
+    return process.env.CACHE_DIR;
   }
+  // Prefer a writable temp dir on hosted filesystems; fall back to the server root locally.
+  const tmp = path.join(os.tmpdir(), "clipfund");
+  try { fs.mkdirSync(tmp, { recursive: true }); return tmp; } catch { return ROOT; }
+}
+
+const CACHE = path.join(cacheDir(), `logs-cache.${MODE}.json`);
+let cache = null;
+
+function loadCache(D) {
+  for (const p of [CACHE, SEED]) {
+    try {
+      const c = JSON.parse(fs.readFileSync(p, "utf8"));
+      if (c && c.treasury === D.treasury && Array.isArray(c.logs) && c.next) return c;
+    } catch {}
+  }
+  return { treasury: D.treasury, next: String(D.startBlock), logs: [] };
+}
+
+function saveCache() {
+  try { fs.writeFileSync(CACHE, JSON.stringify(cache)); } catch (e) { console.log(`log cache write skipped: ${e.message}`); }
+}
+
+async function treasuryLogs(D) {
+  if (!cache) cache = loadCache(D);
   // Load-balanced public RPC nodes can lag a few blocks, so only blocks older than TAIL are cached;
   // the newest TAIL blocks are re-read on every call and de-duplicated.
   const TAIL = 30n;
@@ -28,8 +52,8 @@ async function treasuryLogs(D) {
     const to = from + STEP > safe ? safe : from + STEP;
     cache.logs.push(...(await get(from, to)));
     from = to + 1n; cache.next = String(from);
+    saveCache();
   }
-  fs.writeFileSync(CACHE, JSON.stringify(cache));
   const tail = [];
   for (let f = from; f <= latest; f += STEP + 1n) tail.push(...(await get(f, f + STEP > latest ? latest : f + STEP)));
   const seen = new Set(); const all = [];

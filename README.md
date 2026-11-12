@@ -56,6 +56,8 @@ The stock tokens are still simulated. sCOIN and sNVDA are test tokens with fixed
 | `server/lib/agent.js` | Books each settlement onchain, buys stocks within the rules, pays opex from the reserve |
 | `server/lib/clip.js` | The actual work: ffmpeg cuts a 9:16 clip with a headline |
 | `server/lib/state.js` | Reads events, builds the reconciliation report |
+| `server/deployments.base-sepolia.json` | Live testnet addresses (no keys) |
+| `render.yaml` | Render Blueprint for a single free Web Service |
 | `server/scripts/` | `setup.mjs` (keys and deploy), `buyer.mjs` (paying client), `e2e.mjs` (scripted run) |
 | `video/` | How the demo video was made (capture script, narration script, Remotion scenes) |
 
@@ -97,7 +99,21 @@ On a local fork the public facilitator can't see your chain, so the server runs 
 
 `setup.mjs` refuses to run on any chain other than 84532.
 
+## Host the dashboard on Render
+
+The agent and dashboard run as one [Render](https://render.com) Web Service, still on Base Sepolia only. There is a `render.yaml` blueprint at the repo root.
+
+1. In Render, choose **New → Blueprint** and point it at this GitHub repo.
+2. Render builds from the `server/` folder with `npm ci`, then starts `node server.js`. It listens on `PORT` (Render sets this) at `0.0.0.0`.
+3. When Render asks for env vars, set **AGENT_PK** to the throwaway agent test key in your local `server/.env`. Leave **CHAIN_MODE** as `base-sepolia`. You do not need the deployer, buyer, facilitator, or vendor keys for the web service.
+4. After the first deploy, the public URL is the dashboard. `GET /api/state` is the live onchain report, and `GET /api/health` is a light health check.
+
+Optional: add `RPC_URL` if the public `https://sepolia.base.org` endpoint rate-limits the service. Do not change `CHAIN_MODE` to mainnet.
+
+ffmpeg is not on Render's Node image, so a paid clip job still settles onchain and returns JSON metadata, but this host will not cut a new mp4. The dashboard does not need ffmpeg.
+
 ## Rules the contract enforces
+
 
 - The agent key and the owner key are separate. The agent can book payments, buy stocks, and pay operating costs. Only the owner (Ownable2Step) can change the reserve target, the split, the allowlist, the caps, or the vendors, and only the owner can withdraw.
 - `buyStock` only spends the stock budget, so the reserve can't be invested.

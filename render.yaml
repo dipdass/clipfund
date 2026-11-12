@@ -1,0 +1,19 @@
+# ClipFund public dashboard + agent, Base Sepolia testnet only.
+# In the Render dashboard: New → Blueprint → this repo.
+# You will be asked for AGENT_PK (the throwaway test key from server/.env). Do not paste any other keys.
+services:
+  - type: web
+    name: clipfund
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm ci
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: CHAIN_MODE
+        value: base-sepolia
+      - key: AGENT_PK
+        sync: false

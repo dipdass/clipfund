@@ -9,10 +9,12 @@ contracts/out/
 contracts/cache/
 contracts/broadcast/
 server/clips/
-server/deployments.*.json
+# local-fork addresses only; server/deployments.base-sepolia.json is committed (public addresses)
+server/deployments.local.json
 e2e-run.*.json
 video/assets/
 video/remotion/public/
 video/remotion/out/
 .DS_Store
+# runtime log cache (a seed snapshot lives in server/data/)
 server/logs-cache.*.json

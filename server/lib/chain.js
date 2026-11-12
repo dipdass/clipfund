@@ -25,7 +25,7 @@ export const publicClient = createPublicClient({ chain, transport: http(RPC_URL)
 
 export function wallet(envKey) {
   const pk = process.env[envKey];
-  if (!pk) throw new Error(`${envKey} missing in .env (run: npm run setup)`);
+  if (!pk) throw new Error(`${envKey} missing in the environment (local: server/.env; hosted: the service env vars)`);
   const account = privateKeyToAccount(pk);
   return createWalletClient({ account, chain, transport: http(RPC_URL) }).extend(publicActions);
 }
@@ -36,15 +36,21 @@ export function artifact(file, name) {
   return { abi: j.abi, bytecode: j.bytecode.object };
 }
 
-export const DEPLOY_FILE = path.join(ROOT, `deployments.${MODE}.json`);
+function loadAbi(shippedName, artifactFile, artifactName) {
+  const shipped = path.join(ROOT, "abi", `${shippedName}.json`);
+  if (fs.existsSync(shipped)) return JSON.parse(fs.readFileSync(shipped, "utf8")).abi;
+  return artifact(artifactFile, artifactName).abi;
+}
+
+export const DEPLOY_FILE = process.env.DEPLOYMENTS_FILE || path.join(ROOT, `deployments.${MODE}.json`);
 export function deployments() {
-  if (!fs.existsSync(DEPLOY_FILE)) throw new Error(`No ${DEPLOY_FILE}; run npm run setup`);
+  if (!fs.existsSync(DEPLOY_FILE)) throw new Error(`No ${DEPLOY_FILE}; run npm run setup, or commit deployments.${MODE}.json`);
   return JSON.parse(fs.readFileSync(DEPLOY_FILE, "utf8"));
 }
 
-export const TREASURY_ABI = artifact("ClipFundTreasury.sol", "ClipFundTreasury").abi;
-export const EXCHANGE_ABI = artifact("SimStock.sol", "SimStockExchange").abi;
-export const STOCK_ABI = artifact("SimStock.sol", "SimStockToken").abi;
+export const TREASURY_ABI = loadAbi("ClipFundTreasury", "ClipFundTreasury.sol", "ClipFundTreasury");
+export const EXCHANGE_ABI = loadAbi("SimStockExchange", "SimStock.sol", "SimStockExchange");
+export const STOCK_ABI = loadAbi("SimStockToken", "SimStock.sol", "SimStockToken");
 export const ERC20_ABI = [
   { type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ name: "a", type: "address" }], outputs: [{ type: "uint256" }] },
   { type: "function", name: "transfer", stateMutability: "nonpayable", inputs: [{ name: "to", type: "address" }, { name: "v", type: "uint256" }], outputs: [{ type: "bool" }] },

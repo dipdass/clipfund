@@ -4,14 +4,18 @@ import { publicClient, wallet, deployments, TREASURY_ABI, ERC20_ABI, USDC, fmt6 
 import { decodeEventLog } from "viem";
 
 const D = deployments();
-const agent = wallet("AGENT_PK");
+let agent = null;
+function getAgent() {
+  if (!agent) agent = wallet("AGENT_PK");
+  return agent;
+}
 let queue = Promise.resolve();
 export const activity = [];
 const log = (m) => { const line = `[agent ${new Date().toISOString()}] ${m}`; activity.push(line); console.log(line); };
 
 const read = (functionName, args = []) => publicClient.readContract({ address: D.treasury, abi: TREASURY_ABI, functionName, args });
 async function write(functionName, args) {
-  const hash = await agent.writeContract({ address: D.treasury, abi: TREASURY_ABI, functionName, args });
+  const hash = await getAgent().writeContract({ address: D.treasury, abi: TREASURY_ABI, functionName, args });
   const rc = await publicClient.waitForTransactionReceipt({ hash });
   if (rc.status !== "success") throw new Error(`${functionName} reverted ${hash}`);
   return hash;

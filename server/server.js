@@ -9,11 +9,12 @@ import { ExactEvmScheme as ExactEvmFacilitator } from "@x402/evm/exact/facilitat
 import { toFacilitatorEvmSigner } from "@x402/evm";
 import { MODE, NETWORK, ROOT, wallet, deployments } from "./lib/chain.js";
 import { onPaid, payOpex, activity, idle } from "./lib/agent.js";
-import { makeClip } from "./lib/clip.js";
+import { makeClip, CLIPS_DIR } from "./lib/clip.js";
 import { buildState } from "./lib/state.js";
 
 const D = deployments();
 const PORT = Number(process.env.PORT || 4021);
+const HOST = process.env.HOST || "0.0.0.0";
 const PRICE = process.env.CLIP_PRICE || "$0.50";
 
 function localFacilitator() {
@@ -49,8 +50,12 @@ const resourceServer = new x402ResourceServer(facilitator)
 
 const app = express();
 app.use(express.json());
-app.use("/clips", express.static(path.join(ROOT, "clips")));
+app.use("/clips", express.static(CLIPS_DIR));
 app.use(express.static(path.join(ROOT, "public")));
+
+app.get("/api/health", (_req, res) => {
+  res.json({ ok: true, mode: MODE, network: NETWORK, treasury: D.treasury });
+});
 
 app.use(paymentMiddleware({
   "POST /clip": {
@@ -78,4 +83,8 @@ app.post("/admin/opex", async (req, res) => {
   catch (e) { res.status(400).json({ ok: false, error: e.shortMessage || e.message }); }
 });
 
-app.listen(PORT, () => console.log(`ClipFund agent on http://localhost:${PORT} (mode=${MODE}, treasury=${D.treasury}, price=${PRICE})`));
+if (!process.env.AGENT_PK) {
+  console.log("AGENT_PK is not set; the dashboard will still serve onchain state, but the agent cannot book payments or buy stocks.");
+}
+
+app.listen(PORT, HOST, () => console.log(`ClipFund agent on http://${HOST}:${PORT} (mode=${MODE}, treasury=${D.treasury}, price=${PRICE})`));
