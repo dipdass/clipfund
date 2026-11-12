@@ -45,7 +45,10 @@ function resilientFacilitator() {
   const url = process.env.FACILITATOR_URL || "https://x402.org/facilitator";
   const remote = new HTTPFacilitatorClient({ url });
   const selfKey = process.env.FACILITATOR_PK ? "FACILITATOR_PK" : process.env.AGENT_PK ? "AGENT_PK" : null;
-  let self = null; let useSelf = process.env.FACILITATOR === "self" && Boolean(selfKey);
+  // Render's egress cannot reach x402.org reliably (connections hang for minutes), so hosted runs settle in-process.
+  // Override with FACILITATOR=remote.
+  const wantSelf = process.env.FACILITATOR ? process.env.FACILITATOR === "self" : Boolean(process.env.RENDER);
+  let self = null; let useSelf = wantSelf && Boolean(selfKey);
   const own = () => (self ||= localFacilitator(selfKey));
   const fallback = (e, retry) => {
     if (!selfKey || /VerifyError|SettleError/.test(e?.name || e?.constructor?.name || "") || /\(\d{3}\)/.test(e?.message || "")) throw e; // the facilitator answered: keep its verdict
@@ -70,7 +73,7 @@ function resilientFacilitator() {
     // A network error (not a verify/settle *result*) also switches to in-process settlement. Retrying a settle is
     // safe: EIP-3009 nonces are single-use, so an authorization the public facilitator already used just fails.
     verify: (p, r) => (useSelf ? own().verify(p, r) : withTimeout(remote.verify(p, r), 20000, "facilitator verify").catch((e) => fallback(e, () => own().verify(p, r)))),
-    settle: (p, r) => (useSelf ? own().settle(p, r) : withTimeout(remote.settle(p, r), 90000, "facilitator settle").catch((e) => fallback(e, () => own().settle(p, r)))),
+    settle: (p, r) => (useSelf ? own().settle(p, r) : withTimeout(remote.settle(p, r), 45000, "facilitator settle").catch((e) => fallback(e, () => own().settle(p, r)))),
   };
 }
 
