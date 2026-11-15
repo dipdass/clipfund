@@ -34,6 +34,7 @@ async function rpc(method, params = []) {
       const t = JSON.parse(params[1]); const { EIP712Domain, ...types } = t.types;
       return account.signTypedData({ domain: t.domain, types, primaryType: t.primaryType, message: t.message });
     }
+    // data already includes the ERC-8021 suffix from tryit.js; do not also set client dataSuffix or it would be appended twice.
     case "eth_sendTransaction": return wc.sendTransaction({ to: params[0].to, data: params[0].data });
     default: return publicClient.request({ method, params });
   }

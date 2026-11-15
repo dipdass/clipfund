@@ -83,6 +83,7 @@ The footer shows the build version (currently **v1.5.0**). If you still see an o
 | `server/server.js` | Express server: x402-paywalled `POST /clip`, `GET /api/state`, dashboard |
 | `server/lib/agent.js` | Books each settlement onchain, buys stocks within the rules, pays opex from the reserve |
 | `server/lib/clip.js` | The actual work: ffmpeg cuts a 9:16 clip with a headline |
+| `server/lib/attribution.js` | ERC-8021 Builder Code suffix (`bc_msc4nf2y`) |
 | `server/lib/state.js` | Reads events, builds the reconciliation report |
 | `server/deployments.base-sepolia.json` | Live testnet addresses (no keys) |
 | `render.yaml` | Render Blueprint for a single free Web Service |
@@ -142,6 +143,22 @@ The cleaner public URL is https://dipdass.github.io/clipfund, which is the same 
 Optional: add `RPC_URL` if the public `https://sepolia.base.org` endpoint rate-limits the service. Do not change `CHAIN_MODE` to mainnet.
 
 ffmpeg is not on Render's Node image, so a paid clip job still settles onchain and returns JSON metadata, but this host will not cut a new mp4. The dashboard does not need ffmpeg.
+
+## Base Builder Code (ERC-8021)
+
+ClipFund's public Builder Code is `bc_msc4nf2y`. It is appended to every transaction the agent, the in-process facilitator, `setup.mjs`, and the "Try it" wallet flow send, so Base can attribute that activity. Contracts do not need to change. Official guide: [Builder Codes for App Developers](https://docs.base.org/specifications/builder-codes/for-app-developers).
+
+Set **one** of these in `server/.env` or on Render (the encoded form wins if both are present):
+
+```bash
+# Official path: ox generates the ERC-8021 suffix from the short code
+BUILDER_CODE=bc_msc4nf2y
+
+# Or paste the Encoded String from dashboard.base.org → Settings → Encoded String
+# BUILDER_CODE_SUFFIX=0x62635f…80218021802180218021802180218021
+```
+
+If neither is set, the server defaults to `bc_msc4nf2y`. After a testnet tx lands, open it on [Sepolia Basescan](https://sepolia.basescan.org), view **Input Data**, and check that it ends with the 16-byte marker `8021` repeating.
 
 ## Rules the contract enforces
 

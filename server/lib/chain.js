@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import { createPublicClient, createWalletClient, http, publicActions, defineChain } from "viem";
 import { privateKeyToAccount, nonceManager } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
+import { DATA_SUFFIX } from "./attribution.js";
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 dotenv.config({ path: path.join(ROOT, ".env"), quiet: true });
@@ -27,7 +28,9 @@ export function wallet(envKey) {
   const pk = process.env[envKey];
   if (!pk) throw new Error(`${envKey} missing in the environment (local: server/.env; hosted: the service env vars)`);
   const account = privateKeyToAccount(pk, { nonceManager }); // shared per address: agent + in-process facilitator never collide
-  return createWalletClient({ account, chain, transport: http(RPC_URL) }).extend(publicActions);
+  // Client-level dataSuffix: viem >= 2.45 appends the ERC-8021 Builder Code to sendTransaction / writeContract / deployContract.
+  // https://docs.base.org/specifications/builder-codes/for-app-developers
+  return createWalletClient({ account, chain, transport: http(RPC_URL), ...(DATA_SUFFIX ? { dataSuffix: DATA_SUFFIX } : {}) }).extend(publicActions);
 }
 
 export function artifact(file, name) {

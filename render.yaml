@@ -17,3 +17,6 @@ services:
         value: base-sepolia
       - key: AGENT_PK
         sync: false
+      # Public Builder Code (not a secret). Or set BUILDER_CODE_SUFFIX to the Encoded String from the dashboard.
+      - key: BUILDER_CODE
+        value: bc_msc4nf2y
