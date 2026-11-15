@@ -58,9 +58,22 @@ async function waitTx(hash) {
   }
   throw new Error("Still pending after a while; check it on basescan");
 }
+// ERC-8021 suffix from the API (env BUILDER_CODE / BUILDER_CODE_SUFFIX). Public, not a secret.
+let SUFFIX = "";
+const mark8021 = "80218021802180218021802180218021";
+function withSuffix(data) {
+  if (!SUFFIX) return data || "0x";
+  const body = !data || data === "0x" ? "0x" : data;
+  const s = SUFFIX.replace(/^0x/i, "");
+  if (body.toLowerCase().endsWith(s.toLowerCase())) return body;
+  return (body === "0x" ? "0x" : body) + s;
+}
+fetch(api("/api/health"), { cache: "no-store" }).then((r) => r.json()).then((j) => {
+  if (j.builderCodeSuffix && String(j.builderCodeSuffix).toLowerCase().endsWith(mark8021)) SUFFIX = j.builderCodeSuffix;
+}).catch(() => {});
 async function send(to, data) {
   if (!(await chainOk())) throw new Error("Please switch your wallet to Base Sepolia");
-  return rq("eth_sendTransaction", [{ from: acct, to, data }]);
+  return rq("eth_sendTransaction", [{ from: acct, to, data: withSuffix(data) }]);
 }
 
 /* ---------- wallet card ---------- */
@@ -91,6 +104,7 @@ async function refresh() {
   const r = await fetch(api(`/api/wallet/${acct}`), { cache: "no-store" });
   if (!r.ok) return;
   W = await r.json();
+  if (W.builderCodeSuffix && String(W.builderCodeSuffix).toLowerCase().endsWith(mark8021)) SUFFIX = W.builderCodeSuffix;
   const st = W.stocks;
   $("w-body").innerHTML = `<div class="wl" style="margin-top:8px"><a class="h" href="${EXPL}/address/${acct}" target="_blank" rel="noopener">${sh(acct)}</a>
     ${id === CHAIN ? "" : '<button class="btn sm" id="w-switch">Switch to Base Sepolia</button>'}</div>

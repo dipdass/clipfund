@@ -12,6 +12,10 @@ let env = fs.existsSync(envPath) ? fs.readFileSync(envPath, "utf8") : "# ClipFun
 for (const k of ["DEPLOYER_PK", "AGENT_PK", "FACILITATOR_PK", "BUYER_PK", "VENDOR_PK"]) {
   if (!new RegExp(`^${k}=`, "m").test(env)) env += `${k}=${generatePrivateKey()}\n`;
 }
+// Public Builder Code (not a secret). Encoded suffix from the dashboard is also accepted as BUILDER_CODE_SUFFIX.
+if (!/^BUILDER_CODE=/m.test(env) && !/^BUILDER_CODE_SUFFIX=/m.test(env)) {
+  env += "BUILDER_CODE=bc_msc4nf2y\n";
+}
 fs.writeFileSync(envPath, env, { mode: 0o600 });
 fs.chmodSync(envPath, 0o600);
 
